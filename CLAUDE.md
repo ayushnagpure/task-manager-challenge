@@ -26,3 +26,7 @@
 - Write or extend tests alongside each feature and run `dotnet test` before finishing
 - Keep changes small: one logical feature per iteration
 - Do not commit; I will commit after verifying
+
+## Database
+- SQL Server instance: localhost\SQLEXPRESS (SQL Server 2019 Express); database TaskManagerDb; Windows auth
+- Connection string key: ConnectionStrings:DefaultConnection (dev value in appsettings.Development.json; README documents how to change it for another machine)
