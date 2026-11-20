@@ -48,6 +48,23 @@ public sealed class TaskService : ITaskService
     }
 
     /// <inheritdoc />
+    public async Task<IReadOnlyList<TaskResponse>> ListAsync(TaskListQuery query, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(query);
+
+        TaskItemStatus? status = query.Status is null ? null : EnumNameAttribute.Parse<TaskItemStatus>(query.Status);
+        TaskPriority? priority = query.Priority is null ? null : EnumNameAttribute.Parse<TaskPriority>(query.Priority);
+
+        var tasks = await _db.Tasks
+            .AsNoTracking()
+            .FilterAndSort(status, priority)
+            .ToListAsync(cancellationToken);
+
+        _logger.LogDebug("Listed {Count} tasks (status {Status}, priority {Priority})", tasks.Count, status, priority);
+        return tasks.Select(t => t.ToResponse()).ToList();
+    }
+
+    /// <inheritdoc />
     public async Task<TaskResponse> GetByIdAsync(int id, CancellationToken cancellationToken)
     {
         var task = await _db.Tasks.AsNoTracking().FirstOrDefaultAsync(t => t.Id == id, cancellationToken)

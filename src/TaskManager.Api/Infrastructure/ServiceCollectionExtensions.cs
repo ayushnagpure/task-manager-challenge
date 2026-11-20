@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Cors.Infrastructure;
 using Microsoft.AspNetCore.HttpLogging;
+using Microsoft.AspNetCore.Mvc.ModelBinding.Metadata;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 using System.Text.Json.Serialization;
@@ -13,13 +14,18 @@ public static class ServiceCollectionExtensions
 {
     /// <summary>
     /// Registers MVC controllers with the API's JSON and validation conventions:
-    /// enums as strings (numbers rejected), no parser/exception details in 400 responses, and
-    /// only explicit <c>[Required]</c> attributes (no implicit "field is required" errors).
+    /// enums as strings (numbers rejected), no parser/exception details in 400 responses,
+    /// only explicit <c>[Required]</c> attributes (no implicit "field is required" errors), and
+    /// validation error keys named like the JSON body (camelCase, e.g. <c>title</c>).
     /// </summary>
     public static IServiceCollection AddApiControllers(this IServiceCollection services)
     {
         services
-            .AddControllers(options => options.SuppressImplicitRequiredAttributeForNonNullableReferenceTypes = true)
+            .AddControllers(options =>
+            {
+                options.SuppressImplicitRequiredAttributeForNonNullableReferenceTypes = true;
+                options.ModelMetadataDetailsProviders.Add(new SystemTextJsonValidationMetadataProvider());
+            })
             .AddJsonOptions(options =>
             {
                 options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter(allowIntegerValues: false));

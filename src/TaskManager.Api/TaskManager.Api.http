@@ -64,6 +64,38 @@ Content-Type: application/json
 
 { "title":
 
+### Validation keys are camelCase like the body (expect errors.title, errors.priority, errors.assignedTo)
+POST {{host}}/api/tasks
+Content-Type: application/json
+
+{ "title": "", "priority": "Urgent", "assignedTo": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx" }
+
+############ Tasks: list ############
+
+### All active tasks, seeded DB (expect 12; order ids 12, 8, 4, 11, 7, 3, 10, 6, 2, 9, 5, 1)
+GET {{host}}/api/tasks
+
+### Filter by status (expect 4 Done tasks: ids 12, 11, 10, 9)
+GET {{host}}/api/tasks?status=Done
+
+### Filter by priority, case-insensitive (expect 3 Critical tasks: ids 12, 8, 4)
+GET {{host}}/api/tasks?priority=critical
+
+### Both filters (expect 1 task: id 3)
+GET {{host}}/api/tasks?status=Todo&priority=High
+
+### Soft-deleted rows excluded (seed id 14 is InProgress/High but deleted; expect only id 7)
+GET {{host}}/api/tasks?status=InProgress&priority=High
+
+### Empty filter value = no filter (expect all 12)
+GET {{host}}/api/tasks?status=
+
+### Invalid filters (expect 400, errors.status and errors.priority list the allowed values)
+GET {{host}}/api/tasks?status=Blocked&priority=Urgent
+
+### Numeric priority (expect 400, errors.priority)
+GET {{host}}/api/tasks?priority=2
+
 ############ Tasks: get by id ############
 
 ### Seeded active task (expect 200)

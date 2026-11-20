@@ -104,9 +104,9 @@ public sealed class CreateTaskTests(DatabaseFixture fixture) : IAsyncLifetime
     [Fact]
     public async Task Create_MissingTitle_Returns400ForTitle()
     {
-        var body = await ApiAssert.ValidationErrorAsync(await _client.PostAsJsonAsync(Url, new { priority = "Low" }), "Title");
+        var body = await ApiAssert.ValidationErrorAsync(await _client.PostAsJsonAsync(Url, new { priority = "Low" }), "title");
 
-        Assert.Contains("Title is required.", body.GetProperty("errors").GetProperty("Title")[0].GetString());
+        Assert.Equal("Title is required.", ApiAssert.FirstError(body, "title"));
     }
 
     [Theory]
@@ -114,69 +114,78 @@ public sealed class CreateTaskTests(DatabaseFixture fixture) : IAsyncLifetime
     [InlineData("   ")]
     public async Task Create_BlankTitle_Returns400ForTitle(string title)
     {
-        await ApiAssert.ValidationErrorAsync(await _client.PostAsJsonAsync(Url, new { title, priority = "Low" }), "Title");
+        await ApiAssert.ValidationErrorAsync(await _client.PostAsJsonAsync(Url, new { title, priority = "Low" }), "title");
     }
 
     [Fact]
     public async Task Create_TitleOver200Chars_Returns400ForTitle()
     {
         var body = await ApiAssert.ValidationErrorAsync(
-            await _client.PostAsJsonAsync(Url, new { title = new string('a', 201), priority = "Low" }), "Title");
+            await _client.PostAsJsonAsync(Url, new { title = new string('a', 201), priority = "Low" }), "title");
 
-        Assert.Equal("Title must be at most 200 characters.", body.GetProperty("errors").GetProperty("Title")[0].GetString());
+        Assert.Equal("Title must be at most 200 characters.", ApiAssert.FirstError(body, "title"));
     }
 
     [Fact]
     public async Task Create_DescriptionOver2000Chars_Returns400ForDescription()
     {
         await ApiAssert.ValidationErrorAsync(
-            await _client.PostAsJsonAsync(Url, new { title = "x", priority = "Low", description = new string('d', 2001) }), "Description");
+            await _client.PostAsJsonAsync(Url, new { title = "x", priority = "Low", description = new string('d', 2001) }), "description");
     }
 
     [Fact]
     public async Task Create_AssignedToOver100Chars_Returns400ForAssignedTo()
     {
         await ApiAssert.ValidationErrorAsync(
-            await _client.PostAsJsonAsync(Url, new { title = "x", priority = "Low", assignedTo = new string('n', 101) }), "AssignedTo");
+            await _client.PostAsJsonAsync(Url, new { title = "x", priority = "Low", assignedTo = new string('n', 101) }), "assignedTo");
     }
 
     [Fact]
     public async Task Create_InvalidStatus_Returns400ListingAllowedValues()
     {
         var body = await ApiAssert.ValidationErrorAsync(
-            await _client.PostAsJsonAsync(Url, new { title = "x", status = "Blocked", priority = "Low" }), "Status");
+            await _client.PostAsJsonAsync(Url, new { title = "x", status = "Blocked", priority = "Low" }), "status");
 
-        Assert.Equal("Status must be one of: Todo, InProgress, Done.", body.GetProperty("errors").GetProperty("Status")[0].GetString());
+        Assert.Equal("Status must be one of: Todo, InProgress, Done.", ApiAssert.FirstError(body, "status"));
     }
 
     [Fact]
     public async Task Create_InvalidPriority_Returns400ListingAllowedValues()
     {
         var body = await ApiAssert.ValidationErrorAsync(
-            await _client.PostAsJsonAsync(Url, new { title = "x", priority = "Urgent" }), "Priority");
+            await _client.PostAsJsonAsync(Url, new { title = "x", priority = "Urgent" }), "priority");
 
-        Assert.Equal("Priority must be one of: Low, Medium, High, Critical.", body.GetProperty("errors").GetProperty("Priority")[0].GetString());
+        Assert.Equal("Priority must be one of: Low, Medium, High, Critical.", ApiAssert.FirstError(body, "priority"));
     }
 
     [Fact]
     public async Task Create_MissingPriority_Returns400ForPriority()
     {
-        await ApiAssert.ValidationErrorAsync(await _client.PostAsJsonAsync(Url, new { title = "x" }), "Priority");
+        await ApiAssert.ValidationErrorAsync(await _client.PostAsJsonAsync(Url, new { title = "x" }), "priority");
     }
 
     [Fact]
     public async Task Create_NumericPriority_Returns400()
     {
-        await ApiAssert.ValidationErrorAsync(await PostRawAsync("""{"title":"x","priority":2}"""), "priority");
+        await ApiAssert.ValidationErrorAsync(await PostRawAsync("""{"title":"x","priority":2}"""), "$.priority");
     }
 
     [Fact]
     public async Task Create_SeveralInvalidFields_ReportsAllOfThem()
     {
         var body = await ApiAssert.ValidationErrorAsync(
-            await _client.PostAsJsonAsync(Url, new { title = "", priority = "Urgent" }), "Title");
+            await _client.PostAsJsonAsync(Url, new { title = "", priority = "Urgent" }), "title");
 
-        Assert.True(body.GetProperty("errors").TryGetProperty("Priority", out _));
+        Assert.True(body.GetProperty("errors").TryGetProperty("priority", out _));
+    }
+
+    [Fact]
+    public async Task Create_ValidationErrorKeys_AreCamelCase()
+    {
+        var body = await ApiAssert.ValidationErrorAsync(
+            await _client.PostAsJsonAsync(Url, new { title = "", priority = "Urgent", assignedTo = new string('n', 101) }), "title");
+
+        Assert.Equal(["assignedTo", "priority", "title"], ApiAssert.ErrorKeys(body));
     }
 
     [Fact]
@@ -185,7 +194,7 @@ public sealed class CreateTaskTests(DatabaseFixture fixture) : IAsyncLifetime
         var response = await PostRawAsync("""{"title":""");
         var raw = await response.Content.ReadAsStringAsync();
 
-        await ApiAssert.ValidationErrorAsync(response, "$");
+        await ApiAssert.ValidationErrorAsync(response, "$.title");
         Assert.DoesNotContain("System.Text.Json", raw);
         Assert.DoesNotContain("Exception", raw);
         Assert.DoesNotContain("TaskManager.Api", raw);

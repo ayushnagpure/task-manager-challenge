@@ -2,8 +2,8 @@
 
 A small task management app: a .NET 9 Web API (EF Core Code First, SQL Server) and a React + Vite UI.
 
-> Status: **step 4 of 11**: scaffold, cross-cutting concerns, data model, seed data, and create/get-by-id
-> endpoints. List, update, delete, summary and the UI come in later steps.
+> Status: **step 5 of 11**: scaffold, cross-cutting concerns, data model, seed data, and the create, get-by-id
+> and list endpoints. Update, delete, summary and the UI come in later steps.
 
 ## Prerequisites
 - .NET SDK 9.0.x (`global.json` pins to the 9.0 line and rolls forward to the latest installed 9.0 feature band)
@@ -69,10 +69,19 @@ $env:TASKMANAGER_TEST_CONNECTION = "Server=MYPC\SQLEXPRESS;Database=TaskManagerD
 ## Endpoints (so far)
 | Method | Path | Success | Errors |
 |--------|------|---------|--------|
+| GET | `/api/tasks?status=&priority=` | 200 + array of tasks (`[]` when nothing matches) | 400 invalid filter value |
 | POST | `/api/tasks` | 201 + `Location: /api/tasks/{id}` + task | 400 validation / bad JSON, 415 non-JSON body |
 | GET | `/api/tasks/{id}` | 200 + task | 404 unknown, soft-deleted, or invalid id (0, negative, non-numeric) |
 | GET | `/health` | 200 "Healthy" | |
 | GET | `/openapi/v1.json` | OpenAPI document (Development only) | |
+
+**List**: `GET /api/tasks?status=InProgress&priority=High`
+- Both filters are optional and case-insensitive. An empty value (`?status=`) means no filter.
+- Invalid values return 400 with the allowed values, e.g. `errors.status: ["Status must be one of: Todo, InProgress, Done."]`.
+- Sort order: priority **Critical, High, Medium, Low**, then newest `createdDate` first, then id.
+  Enums are stored as strings, so the sort uses an explicit priority rank (a SQL `CASE`), never the column value
+  (which would sort alphabetically). See `Services/TaskQueries.cs`.
+- Soft-deleted tasks are never returned. There's no paging, since the dataset is small.
 
 **Create request**:
 ```json
@@ -104,7 +113,8 @@ Every error is an RFC 7807 `application/problem+json` body with the same shape:
 ```json
 { "type": "...", "title": "Not Found", "status": 404, "detail": "...", "instance": "GET /nope", "traceId": "00-..." }
 ```
-- Validation errors (400) add an `errors` object keyed by field (`Title`, `Priority`, …), with messages such as
+- Validation errors (400) add an `errors` object keyed by field, named exactly like the JSON body or query
+  parameter (camelCase: `title`, `priority`, `assignedTo`, `status`), with messages such as
   `"Priority must be one of: Low, Medium, High, Critical."`. Malformed JSON and wrong JSON types (e.g. a number
   for `priority`) are reported under a JSON-path key such as `$.priority` with the generic message
   `"The input was not valid."`. Parser and type details are never returned.

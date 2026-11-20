@@ -13,18 +13,26 @@ internal static class ApiAssert
     };
 
     /// <summary>
-    /// Asserts a 400 ValidationProblemDetails with an error whose key matches <paramref name="errorKey"/>
-    /// (case-insensitive, so "$.priority" matches "priority"). Returns the parsed body.
+    /// Asserts a 400 ValidationProblemDetails with an error under exactly <paramref name="errorKey"/>
+    /// (ordinal, case-sensitive, so "Title" does not satisfy "title"). Returns the parsed body.
     /// </summary>
     public static async Task<JsonElement> ValidationErrorAsync(HttpResponseMessage response, string errorKey)
     {
         var root = await ProblemAsync(response, HttpStatusCode.BadRequest);
         var errors = root.GetProperty("errors");
         Assert.True(
-            errors.EnumerateObject().Any(e => e.Name.Contains(errorKey, StringComparison.OrdinalIgnoreCase)),
-            $"Expected a validation error for '{errorKey}', got: {errors}");
+            errors.EnumerateObject().Any(e => e.Name == errorKey),
+            $"Expected a validation error under key '{errorKey}', got: {errors}");
         return root;
     }
+
+    /// <summary>Returns the first message for <paramref name="errorKey"/> in a ValidationProblemDetails body.</summary>
+    public static string? FirstError(JsonElement problem, string errorKey) =>
+        problem.GetProperty("errors").GetProperty(errorKey)[0].GetString();
+
+    /// <summary>Returns the error keys of a ValidationProblemDetails body, sorted.</summary>
+    public static string[] ErrorKeys(JsonElement problem) =>
+        problem.GetProperty("errors").EnumerateObject().Select(e => e.Name).Order(StringComparer.Ordinal).ToArray();
 
     /// <summary>Asserts a problem+json response with the given status and a traceId. Returns the parsed body.</summary>
     public static async Task<JsonElement> ProblemAsync(HttpResponseMessage response, HttpStatusCode status)

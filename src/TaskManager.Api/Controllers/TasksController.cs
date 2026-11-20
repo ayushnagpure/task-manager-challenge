@@ -28,6 +28,20 @@ public sealed class TasksController : ControllerBase
         return CreatedAtAction(nameof(GetById), new { id = created.Id }, created);
     }
 
+    /// <summary>
+    /// Lists tasks, optionally filtered by <c>status</c> and/or <c>priority</c> (case-insensitive).
+    /// Sorted by priority (Critical, High, Medium, Low), then newest first. Soft-deleted tasks are excluded.
+    /// </summary>
+    /// <param name="query">Optional filters.</param>
+    /// <param name="cancellationToken">Cancels the request.</param>
+    /// <response code="200">The matching tasks (an empty array when nothing matches).</response>
+    /// <response code="400">A filter value is not a valid status or priority.</response>
+    [HttpGet]
+    [ProducesResponseType<IReadOnlyList<TaskResponse>>(StatusCodes.Status200OK)]
+    [ProducesResponseType<ValidationProblemDetails>(StatusCodes.Status400BadRequest, "application/problem+json")]
+    public async Task<ActionResult<IReadOnlyList<TaskResponse>>> List([FromQuery] TaskListQuery query, CancellationToken cancellationToken) =>
+        Ok(await _taskService.ListAsync(query, cancellationToken));
+
     /// <summary>Gets a task by id. Soft-deleted tasks return 404.</summary>
     /// <param name="id">Task id (a positive integer).</param>
     /// <param name="cancellationToken">Cancels the request.</param>
