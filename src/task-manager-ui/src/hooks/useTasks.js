@@ -14,7 +14,9 @@ import { listTasks } from '../api/tasksApi.js';
  *   error: import('../api/ApiError.js').ApiError | null,
  *   reload: () => void,
  *   replaceTask: (task: import('../api/tasksApi.js').Task) => void,
- * }} `replaceTask` swaps in a saved task (with its new rowVersion) immediately, before a reload finishes.
+ *   removeTask: (id: number) => void,
+ * }} `replaceTask` swaps in a saved task (with its new rowVersion) and `removeTask` drops a deleted one,
+ *   immediately, before a reload finishes.
  */
 export function useTasks(filters) {
   const { status = '', priority = '' } = filters;
@@ -51,5 +53,9 @@ export function useTasks(filters) {
     }));
   }, []);
 
-  return { ...state, reload, replaceTask };
+  const removeTask = useCallback((id) => {
+    setState((previous) => ({ ...previous, tasks: previous.tasks.filter((existing) => existing.id !== id) }));
+  }, []);
+
+  return { ...state, reload, replaceTask, removeTask };
 }

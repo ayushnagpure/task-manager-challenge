@@ -100,6 +100,27 @@ textarea {
   font-size: 0.8125rem;
 }
 
+.button--danger {
+  border-color: var(--color-danger-border);
+  color: var(--color-danger);
+}
+
+.button--danger:hover:not(:disabled) {
+  border-color: var(--color-danger);
+  background: var(--color-danger-soft);
+}
+
+.button--danger-solid {
+  border-color: var(--color-danger);
+  background: var(--color-danger);
+  color: #ffffff;
+}
+
+.button--danger-solid:hover:not(:disabled) {
+  border-color: #912018;
+  background: #912018;
+}
+
 .button--primary {
   border-color: var(--color-accent);
   background: var(--color-accent);

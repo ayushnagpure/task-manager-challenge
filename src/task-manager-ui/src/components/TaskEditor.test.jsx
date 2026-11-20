@@ -3,13 +3,16 @@ import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import App from '../App.jsx';
 import { ApiError } from '../api/ApiError.js';
-import { createTask, getTask, listTasks, updateTask } from '../api/tasksApi.js';
+import { createTask, getSummary, getTask, listTasks, updateTask } from '../api/tasksApi.js';
 
 vi.mock('../api/tasksApi.js', () => ({
   listTasks: vi.fn(),
   getTask: vi.fn(),
   createTask: vi.fn(),
   updateTask: vi.fn(),
+  updateTaskStatus: vi.fn(),
+  deleteTask: vi.fn(),
+  getSummary: vi.fn(),
 }));
 
 const TASK = {
@@ -28,6 +31,7 @@ const never = () => new Promise(() => {});
 
 beforeEach(() => {
   vi.mocked(listTasks).mockReset().mockResolvedValue([TASK]);
+  vi.mocked(getSummary).mockReset().mockResolvedValue([]);
   vi.mocked(getTask).mockReset();
   vi.mocked(createTask).mockReset();
   vi.mocked(updateTask).mockReset();
@@ -84,6 +88,7 @@ describe('create', () => {
     });
     await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
     expect(listTasks).toHaveBeenCalledTimes(2);
+    expect(getSummary).toHaveBeenCalledTimes(2); // summary refreshed after the create
     expect(screen.getByRole('button', { name: 'New task' })).toHaveFocus();
   });
 
@@ -164,6 +169,7 @@ describe('edit', () => {
     expect(screen.getByText('Fix login outage now')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Edit Fix login outage now' })).toHaveFocus();
     expect(listTasks).toHaveBeenCalledTimes(2);
+    expect(getSummary).toHaveBeenCalledTimes(2); // summary refreshed after the edit
   });
 
   it('on 409 keeps the edits, then loads the latest version and lists the unsaved edits', async () => {

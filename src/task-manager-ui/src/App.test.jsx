@@ -3,9 +3,17 @@ import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import App from './App.jsx';
 import { ApiError } from './api/ApiError.js';
-import { listTasks } from './api/tasksApi.js';
+import { getSummary, listTasks } from './api/tasksApi.js';
 
-vi.mock('./api/tasksApi.js', () => ({ listTasks: vi.fn(), getTask: vi.fn(), createTask: vi.fn(), updateTask: vi.fn() }));
+vi.mock('./api/tasksApi.js', () => ({
+  listTasks: vi.fn(),
+  getTask: vi.fn(),
+  createTask: vi.fn(),
+  updateTask: vi.fn(),
+  updateTaskStatus: vi.fn(),
+  deleteTask: vi.fn(),
+  getSummary: vi.fn(),
+}));
 
 const task = (overrides) => ({
   id: 1,
@@ -24,6 +32,7 @@ const filtersOf = (call) => call[0];
 
 beforeEach(() => {
   listTasks.mockReset();
+  getSummary.mockReset().mockResolvedValue([]);
 });
 
 describe('App task list', () => {
@@ -60,7 +69,7 @@ describe('App task list', () => {
 
     render(<App />);
 
-    expect(screen.getByRole('status')).toHaveTextContent('Loading tasks…');
+    expect(screen.getByText('Loading tasks…')).toHaveAttribute('role', 'status');
   });
 
   it('shows "No tasks yet" when there are no tasks at all', async () => {

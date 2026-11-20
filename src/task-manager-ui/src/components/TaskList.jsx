@@ -6,10 +6,24 @@ import './TaskList.css';
  * @param {{
  *   tasks: import('../api/tasksApi.js').Task[],
  *   busy: boolean,
+ *   pendingStatusById?: Record<number, string>,
+ *   statusErrorById?: Record<number, string>,
+ *   onStatusChange: (task: import('../api/tasksApi.js').Task, status: string) => void,
+ *   onDismissStatusError: (id: number) => void,
  *   onEdit: (task: import('../api/tasksApi.js').Task) => void,
+ *   onDelete: (task: import('../api/tasksApi.js').Task) => void,
  * }} props
  */
-export default function TaskList({ tasks, busy, onEdit }) {
+export default function TaskList({
+  tasks,
+  busy,
+  pendingStatusById = {},
+  statusErrorById = {},
+  onStatusChange,
+  onDismissStatusError,
+  onEdit,
+  onDelete,
+}) {
   return (
     <div className={`task-list${busy ? ' task-list--busy' : ''}`} aria-busy={busy}>
       <table className="task-table">
@@ -28,7 +42,16 @@ export default function TaskList({ tasks, busy, onEdit }) {
         </thead>
         <tbody>
           {tasks.map((task) => (
-            <TaskRow key={task.id} task={task} onEdit={onEdit} />
+            <TaskRow
+              key={task.id}
+              task={task}
+              pendingStatus={pendingStatusById[task.id]}
+              statusError={statusErrorById[task.id]}
+              onStatusChange={onStatusChange}
+              onDismissStatusError={onDismissStatusError}
+              onEdit={onEdit}
+              onDelete={onDelete}
+            />
           ))}
         </tbody>
       </table>
