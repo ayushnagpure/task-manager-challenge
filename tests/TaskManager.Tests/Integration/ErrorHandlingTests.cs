@@ -46,6 +46,25 @@ public sealed class ErrorHandlingTests(TaskManagerApiFactory factory) : IClassFi
     }
 
     [Fact]
+    public async Task DbUpdateConcurrencyException_Returns409ProblemDetails_WithoutInternalDetails()
+    {
+        var client = factory.CreateClient();
+
+        var response = await client.GetAsync("/test/errors/concurrency");
+        var body = await response.Content.ReadAsStringAsync();
+
+        Assert.Equal(HttpStatusCode.Conflict, response.StatusCode);
+        Assert.Equal(ProblemJson, response.Content.Headers.ContentType?.MediaType);
+
+        using var json = JsonDocument.Parse(body);
+        Assert.Equal(409, json.RootElement.GetProperty("status").GetInt32());
+        Assert.Equal("Conflict", json.RootElement.GetProperty("title").GetString());
+        Assert.Equal("The task was changed by someone else. Reload it and try again.", json.RootElement.GetProperty("detail").GetString());
+        AssertHasTraceId(json);
+        Assert.DoesNotContain(TestErrorsController.SensitiveMessage, body);
+    }
+
+    [Fact]
     public async Task UnknownRoute_Returns404ProblemDetails()
     {
         var client = factory.CreateClient();

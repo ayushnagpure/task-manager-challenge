@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.AspNetCore.TestHost;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using TaskManager.Tests.Integration.Database;
 using TaskManager.Tests.Integration.TestSupport;
 
 namespace TaskManager.Tests.Integration;
@@ -23,6 +24,7 @@ public sealed class TaskManagerApiFactory : WebApplicationFactory<Program>
             config.AddInMemoryCollection(new Dictionary<string, string?>
             {
                 ["Cors:AllowedOrigins:0"] = AllowedOrigin,
+                ["ConnectionStrings:DefaultConnection"] = TestDatabase.ConnectionString,
             }));
 
         builder.ConfigureTestServices(services =>

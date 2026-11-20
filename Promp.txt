@@ -1,0 +1,82 @@
+Server=localhost\SQLEXPRESS;Database=TaskManagerDb;Trusted_Connection=True;TrustServerCertificate=True
+--------------------------------------------------------------------------------------------------------------------
+
+I'm working on a small task management app and want to use you as my pair
+throughout. CLAUDE.md in the repo root has my conventions, so please read it first.
+
+The goal is a small task management app. .NET 9 Web API with EF Core code first
+on my local SQL Server Express (localhost\SQLEXPRESS), and a simple React + Vite
+front end on top. Users can list tasks (filter by status and priority), view one,
+create, update, and soft delete. There also needs to be a
+GET /api/tasks/summary endpoint that uses raw SQL, not EF, to return task counts
+grouped by status and priority.
+
+I don't want any code yet. I'd like to prepare a plan first. Can you propose:
+
+- how you'd lay out the solution (api, tests, ui), and whether a small shared
+  library is worth it here
+- how you'd model the Task entity and handle soft delete
+- how you'd do validation and a global exception handler so every error comes
+  back in the same shape
+- where logging should go
+- how we'd seed 10 or so sample tasks
+- how we'd test it. so I want failure cases
+  and filtering covered too
+- a breakdown into small steps where each one can be built, tested and committed
+  on its own
+
+For Security taking CORS, config/secrets and
+the raw SQL that we should handle properly from the start.
+
+If you're unsure about something , tell me instead of picking
+quietly. I'd rather decide than find out later. Don't start implementing until we confirm the plan.
+
+------------------------------------------------------------------------------------------------------------
+
+A few things I need to change 
+The plans says Priority includes Critical, so please add it (Low, Medium, High,
+Critical). It also requires an AssignedTo string field, which isn't in the entity.
+And I'd like to use the brief's names, CreatedDate and ModifiedDate, instead of
+CreatedAt/UpdatedAt.
+
+For seeding, with four priorities there are 12 combinations, so let's seed about
+15 tasks with at least 10 not deleted, and varied AssignedTo values.
+
+For the list endpoint, please define the default sort explicitly (priority
+descending, then CreatedDate descending) so we have a clear LINQ filter and sort
+example. Add the ORDER BY to the summary SQL too.
+
+I'm not sure the full PUT with rowVersion is nice for a status dropdown. Tell me
+whether you'd add a PATCH for status or keep PUT, and why, before we build it.
+
+Also add one unit test for a TaskService method using a fake TimeProvider, make
+Respawn ignore __EFMigrationsHistory, and loosen global.json to latestFeature.
+
+Merge steps 1 and 2 into one iteration. Then start with that step only. Don't
+commit anything, and tell me what to run to verify it.
+
+----------------------------------------------------------------------
+Plan looks good, and I agree with PUT plus a status PATCH. Go ahead with step 1
+only. Please don't commit anything, and don't start step 2. When you're done,
+tell me exactly what to run to verify it, including the preflight check, and
+tell me which files you created so I can review them before I commit.
+-------------------------------------------------------------------------------
+
+
+Step 1 is committed. Next is step 2, the data model, and I'd like a short plan
+before any code. It should cover the TaskItem entity, the enums, the DbContext
+and its entity configuration with the soft-delete query filter, the initial
+migration, and the test database fixture with Respawn.
+
+Keep every EF Core package on 9.0.x so it matches my dotnet-ef 9.0.10. The
+brief names the fields Id, Title, Description, Status, Priority (including
+Critical), AssignedTo, CreatedDate, ModifiedDate and IsDeleted, so please stick
+to those names.
+
+One more thing. In step 1 we left out the mapping from
+DbUpdateConcurrencyException to a 409. Tell me whether you'd add it now or when
+we build the update endpoint, and why.
+
+Don't commit anything, and tell me how to verify it when you're done.
+
+-----------------------------------------------------------------------

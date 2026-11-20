@@ -10,6 +10,7 @@ builder.Services.AddOpenApi();
 builder.Services.AddHealthChecks();
 builder.Services.AddApiProblemDetails();
 builder.Services.AddUiCors();
+builder.Services.AddTaskDatabase();
 builder.Services.AddRequestLogging();
 
 var app = builder.Build();

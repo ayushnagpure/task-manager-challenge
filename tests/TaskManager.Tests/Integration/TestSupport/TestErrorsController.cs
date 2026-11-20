@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using TaskManager.Api.Domain;
 
 namespace TaskManager.Tests.Integration.TestSupport;
@@ -18,4 +19,7 @@ public sealed class TestErrorsController : ControllerBase
 
     [HttpGet("not-found")]
     public IActionResult MissingResource() => throw new NotFoundException("Task", 42);
+
+    [HttpGet("concurrency")]
+    public IActionResult Concurrency() => throw new DbUpdateConcurrencyException(SensitiveMessage);
 }

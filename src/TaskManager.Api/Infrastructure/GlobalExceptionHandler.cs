@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using TaskManager.Api.Domain;
 
 namespace TaskManager.Api.Infrastructure;
@@ -46,6 +47,12 @@ public sealed class GlobalExceptionHandler : IExceptionHandler
                 Status = StatusCodes.Status404NotFound,
                 Title = "Resource not found",
                 Detail = notFound.Message,
+            },
+            DbUpdateConcurrencyException => new ProblemDetails
+            {
+                Status = StatusCodes.Status409Conflict,
+                Title = "Conflict",
+                Detail = "The task was changed by someone else. Reload it and try again.",
             },
             BadHttpRequestException badRequest => new ProblemDetails
             {

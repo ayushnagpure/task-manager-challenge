@@ -1,12 +1,32 @@
 using Microsoft.AspNetCore.Cors.Infrastructure;
 using Microsoft.AspNetCore.HttpLogging;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
+using TaskManager.Api.Data;
 
 namespace TaskManager.Api.Infrastructure;
 
 /// <summary>Registration helpers for cross-cutting concerns.</summary>
 public static class ServiceCollectionExtensions
 {
+    /// <summary>
+    /// Registers <see cref="TaskDbContext"/> on SQL Server. The connection string comes from
+    /// <c>ConnectionStrings:DefaultConnection</c> and is validated at startup (fails fast if missing).
+    /// </summary>
+    public static IServiceCollection AddTaskDatabase(this IServiceCollection services)
+    {
+        services.AddOptions<DatabaseSettings>()
+            .Configure<IConfiguration>((settings, configuration) =>
+                settings.ConnectionString = configuration.GetConnectionString(DatabaseSettings.ConnectionStringName) ?? string.Empty)
+            .Validate(settings => !string.IsNullOrWhiteSpace(settings.ConnectionString), DatabaseSettings.MissingConnectionStringMessage)
+            .ValidateOnStart();
+
+        services.AddDbContext<TaskDbContext>((serviceProvider, options) =>
+            options.UseSqlServer(serviceProvider.GetRequiredService<IOptions<DatabaseSettings>>().Value.ConnectionString));
+
+        return services;
+    }
+
     /// <summary>
     /// Registers ProblemDetails (with <c>traceId</c>/<c>instance</c> on every response) and the
     /// <see cref="GlobalExceptionHandler"/>.
