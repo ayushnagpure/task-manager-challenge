@@ -2,20 +2,53 @@
 
 A small task management app: a .NET 9 Web API (EF Core Code First, SQL Server) and a React + Vite UI.
 
-> Status: **step 8 of 11**: the API is complete. That covers the scaffold, cross-cutting concerns, data model and
-> seed data, plus the list, get, create, update (PUT), change-status (PATCH), soft-delete and summary endpoints.
-> The UI comes in later steps.
+> Status: **step 9 of 11**: the API is complete. The UI has its scaffold, API layer, and a task list with status
+> and priority filters. Detail, create/edit, delete and summary screens come in the next steps.
+
+## Running the UI against the API
+Use two terminals:
+```powershell
+# 1. API (repo root)
+dotnet run --project src/TaskManager.Api --launch-profile http      # http://localhost:5157
+
+# 2. UI
+cd src/task-manager-ui
+npm ci                                                              # first time / after pulling
+npm run dev                                                         # http://localhost:5173
+```
+- The UI calls the API directly at `VITE_API_BASE_URL` (`src/task-manager-ui/.env.development`, default
+  `http://localhost:5157`). There is no Vite proxy. The API's CORS policy allows `http://localhost:5173`, and the
+  dev server is pinned to that port (`strictPort`), so it fails rather than silently moving to a port CORS would reject.
+- To point the UI at a different API, create `src/task-manager-ui/.env.development.local` (gitignored) containing
+  `VITE_API_BASE_URL=http://host:port`. If the UI must run on another origin, add it to the API's `Cors:AllowedOrigins`.
+- UI commands: `npm test` (Vitest, single run), `npm run test:watch`, `npm run build` (output in `dist/`), `npm run preview`.
+
+### UI structure
+```
+src/task-manager-ui/src/
+  api/          httpClient.js (the only fetch; parses ProblemDetails into ApiError), tasksApi.js, config.js, ApiError.js
+  hooks/        useTasks.js (loads the list, re-fetches on filter change, aborts stale requests)
+  components/   TaskFilters, TaskList, TaskRow, PriorityBadge, StatusBadge, EmptyState, ErrorBanner (one per file, own CSS)
+  constants/    taskOptions.js (status/priority values, labels, icons)
+```
+- **Errors:** every failure reaches components as an `ApiError` with `title`, `detail`, camelCase `fieldErrors`
+  (`$.priority` is normalised to `priority`), `traceId`, and a `kind` of `http`, `network` (API not running or
+  blocked by CORS) or `config`.
+- **Priority** is shown with colour plus an icon and a text label (▲▲ Critical, ▲ High, ● Medium, ▼ Low), so it
+  never relies on colour alone.
+- **Versions** are pinned exactly (`.npmrc` has `save-exact=true`, and `package-lock.json` is committed), using
+  releases that were at least two weeks old when added.
 
 ## Prerequisites
 - .NET SDK 9.0.x (`global.json` pins to the 9.0 line and rolls forward to the latest installed 9.0 feature band)
 - SQL Server Express at `localhost\SQLEXPRESS` (from step 2 onwards)
-- Node.js 20+ (from step 9 onwards)
+- Node.js 22.12+ for the UI (developed on Node 26; `package.json` declares `"engines": { "node": ">=22.12" }`)
 
 ## Layout
 ```
 src/TaskManager.Api/      Web API (Controllers, Domain, Infrastructure, ...)
 tests/TaskManager.Tests/  xUnit tests (Unit/ and Integration/)
-src/task-manager-ui/      React + Vite UI (later)
+src/task-manager-ui/      React + Vite UI (JavaScript, plain CSS)
 ```
 NuGet versions are managed centrally in `Directory.Packages.props`. All Microsoft.* framework packages are pinned to 9.0.x.
 

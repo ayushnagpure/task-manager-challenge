@@ -1,0 +1,5 @@
+node_modules/
+dist/
+coverage/
+# Local overrides (e.g. a different API URL); .env.development itself is committed (no secrets).
+.env*.local
