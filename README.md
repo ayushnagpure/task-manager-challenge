@@ -2,8 +2,9 @@
 
 A small task management app: a .NET 9 Web API (EF Core Code First, SQL Server) and a React + Vite UI.
 
-> Status: **step 7 of 11**: scaffold, cross-cutting concerns, data model, seed data, and the list, get, create,
-> update (PUT), change-status (PATCH) and soft-delete endpoints. The summary and the UI come in later steps.
+> Status: **step 8 of 11**: the API is complete. That covers the scaffold, cross-cutting concerns, data model and
+> seed data, plus the list, get, create, update (PUT), change-status (PATCH), soft-delete and summary endpoints.
+> The UI comes in later steps.
 
 ## Prerequisites
 - .NET SDK 9.0.x (`global.json` pins to the 9.0 line and rolls forward to the latest installed 9.0 feature band)
@@ -70,6 +71,7 @@ $env:TASKMANAGER_TEST_CONNECTION = "Server=MYPC\SQLEXPRESS;Database=TaskManagerD
 | Method | Path | Success | Errors |
 |--------|------|---------|--------|
 | GET | `/api/tasks?status=&priority=` | 200 + array of tasks (`[]` when nothing matches) | 400 invalid filter value |
+| GET | `/api/tasks/summary` | 200 + `[{ status, priority, count }]` (`[]` when no active tasks) | |
 | POST | `/api/tasks` | 201 + `Location: /api/tasks/{id}` + task | 400 validation / bad JSON, 415 non-JSON body |
 | GET | `/api/tasks/{id}` | 200 + task | 404 unknown, soft-deleted, or invalid id (0, negative, non-numeric) |
 | PUT | `/api/tasks/{id}` | 200 + updated task (new `rowVersion`) | 400 validation / bad rowVersion, 404, **409 stale rowVersion** |
@@ -125,6 +127,27 @@ A soft-deleted task is indistinguishable from one that never existed: both retur
 **Change status (PATCH `/api/tasks/{id}/status`)**: body `{ "status": "Done" }`.
 - Last write wins, so no `rowVersion` is needed. Setting the status the task already has changes nothing.
 - The response carries the task's **new** `rowVersion`. Clients must keep it, because a later PUT with the old one gets 409.
+
+**Summary (GET `/api/tasks/summary`)**: counts of active tasks grouped by status and priority.
+```json
+[ { "status": "Todo", "priority": "High", "count": 2 }, { "status": "Done", "priority": "Critical", "count": 3 } ]
+```
+- Only combinations that have tasks are returned. Soft-deleted tasks are not counted.
+- Order: status Todo, InProgress, Done, then priority Critical, High, Medium, Low.
+- Implemented with **raw SQL via plain ADO.NET** (`Services/TaskSummaryService.cs`), not EF Core. It uses the same
+  `ConnectionStrings:DefaultConnection`. The SQL is a constant with no user input:
+  ```sql
+  SELECT [Status], [Priority], COUNT(*) AS [Count]
+  FROM [dbo].[Tasks]
+  WHERE [IsDeleted] = 0
+  GROUP BY [Status], [Priority]
+  ORDER BY
+      CASE [Status] WHEN N'Todo' THEN 1 WHEN N'InProgress' THEN 2 WHEN N'Done' THEN 3 ELSE 4 END,
+      CASE [Priority] WHEN N'Critical' THEN 1 WHEN N'High' THEN 2 WHEN N'Medium' THEN 3 WHEN N'Low' THEN 4 ELSE 5 END;
+  ```
+  `WHERE [IsDeleted] = 0` is required because EF's soft-delete query filter doesn't apply to raw SQL. The CASE
+  ranks are needed because the enums are stored as strings, which would otherwise sort alphabetically. Any future
+  filter must be added as a typed `SqlParameter`, never by concatenating text.
 
 **Delete (DELETE `/api/tasks/{id}`)**: a soft delete. The row is kept with `IsDeleted = 1` and from then on is
 hidden from every endpoint (GET, list, PUT, PATCH, summary). Deleting again returns 404. Last write wins, so no

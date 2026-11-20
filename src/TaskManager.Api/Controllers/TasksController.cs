@@ -10,9 +10,25 @@ namespace TaskManager.Api.Controllers;
 public sealed class TasksController : ControllerBase
 {
     private readonly ITaskService _taskService;
+    private readonly ITaskSummaryService _summaryService;
 
     /// <summary>Creates the controller.</summary>
-    public TasksController(ITaskService taskService) => _taskService = taskService;
+    public TasksController(ITaskService taskService, ITaskSummaryService summaryService)
+    {
+        _taskService = taskService;
+        _summaryService = summaryService;
+    }
+
+    /// <summary>
+    /// Counts active tasks grouped by status and priority (raw SQL). Only combinations that have tasks
+    /// are returned, ordered Todo, InProgress, Done, then Critical, High, Medium, Low.
+    /// </summary>
+    /// <param name="cancellationToken">Cancels the request.</param>
+    /// <response code="200">The counts (an empty array when there are no active tasks).</response>
+    [HttpGet("summary")]
+    [ProducesResponseType<IReadOnlyList<TaskSummaryItem>>(StatusCodes.Status200OK)]
+    public async Task<ActionResult<IReadOnlyList<TaskSummaryItem>>> Summary(CancellationToken cancellationToken) =>
+        Ok(await _summaryService.GetSummaryAsync(cancellationToken));
 
     /// <summary>Creates a task.</summary>
     /// <param name="request">The task to create.</param>

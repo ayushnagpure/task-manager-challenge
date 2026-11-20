@@ -171,6 +171,12 @@ Content-Type: application/json
 
 { "status": "Done" }
 
+############ Tasks: summary (raw SQL) ############
+
+### Counts by status and priority (expect 200, [{ "status", "priority", "count" }],
+### ordered Todo, InProgress, Done then Critical, High, Medium, Low; deleted tasks excluded)
+GET {{host}}/api/tasks/summary
+
 ############ Tasks: soft delete ############
 # Run in order. Task 5 is a seeded active task.
 

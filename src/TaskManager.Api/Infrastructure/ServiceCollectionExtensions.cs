@@ -39,6 +39,7 @@ public static class ServiceCollectionExtensions
     {
         services.AddSingleton(TimeProvider.System);
         services.AddScoped<ITaskService, TaskService>();
+        services.AddScoped<ITaskSummaryService, TaskSummaryService>();
         return services;
     }
 
