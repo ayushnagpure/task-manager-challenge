@@ -42,6 +42,42 @@ public sealed class TasksController : ControllerBase
     public async Task<ActionResult<IReadOnlyList<TaskResponse>>> List([FromQuery] TaskListQuery query, CancellationToken cancellationToken) =>
         Ok(await _taskService.ListAsync(query, cancellationToken));
 
+    /// <summary>
+    /// Replaces a task's editable fields. Send the <c>rowVersion</c> from the last response; if the task
+    /// has changed since, the update is rejected with 409. Omitted description/assignedTo are cleared.
+    /// </summary>
+    /// <param name="id">Task id (a positive integer).</param>
+    /// <param name="request">The new values and the current rowVersion.</param>
+    /// <param name="cancellationToken">Cancels the request.</param>
+    /// <response code="200">The updated task, with its new rowVersion.</response>
+    /// <response code="400">Validation failed (including a missing or malformed rowVersion).</response>
+    /// <response code="404">No such task, or it has been deleted.</response>
+    /// <response code="409">The task was changed by someone else since it was read.</response>
+    [HttpPut("{id:int:min(1)}")]
+    [ProducesResponseType<TaskResponse>(StatusCodes.Status200OK)]
+    [ProducesResponseType<ValidationProblemDetails>(StatusCodes.Status400BadRequest, "application/problem+json")]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound, "application/problem+json")]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status409Conflict, "application/problem+json")]
+    public async Task<ActionResult<TaskResponse>> Update(int id, [FromBody] UpdateTaskRequest request, CancellationToken cancellationToken) =>
+        await _taskService.UpdateAsync(id, request, cancellationToken);
+
+    /// <summary>
+    /// Changes only a task's status (for the status dropdown). Last write wins: no rowVersion is needed.
+    /// The response carries the new rowVersion; use it for any later PUT. Setting the current status is a no-op.
+    /// </summary>
+    /// <param name="id">Task id (a positive integer).</param>
+    /// <param name="request">The new status.</param>
+    /// <param name="cancellationToken">Cancels the request.</param>
+    /// <response code="200">The task with its new status and rowVersion.</response>
+    /// <response code="400">The status is missing or not Todo, InProgress or Done.</response>
+    /// <response code="404">No such task, or it has been deleted.</response>
+    [HttpPatch("{id:int:min(1)}/status")]
+    [ProducesResponseType<TaskResponse>(StatusCodes.Status200OK)]
+    [ProducesResponseType<ValidationProblemDetails>(StatusCodes.Status400BadRequest, "application/problem+json")]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound, "application/problem+json")]
+    public async Task<ActionResult<TaskResponse>> UpdateStatus(int id, [FromBody] UpdateTaskStatusRequest request, CancellationToken cancellationToken) =>
+        await _taskService.UpdateStatusAsync(id, request, cancellationToken);
+
     /// <summary>Gets a task by id. Soft-deleted tasks return 404.</summary>
     /// <param name="id">Task id (a positive integer).</param>
     /// <param name="cancellationToken">Cancels the request.</param>

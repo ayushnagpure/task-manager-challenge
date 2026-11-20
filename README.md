@@ -2,8 +2,8 @@
 
 A small task management app: a .NET 9 Web API (EF Core Code First, SQL Server) and a React + Vite UI.
 
-> Status: **step 5 of 11**: scaffold, cross-cutting concerns, data model, seed data, and the create, get-by-id
-> and list endpoints. Update, delete, summary and the UI come in later steps.
+> Status: **step 6 of 11**: scaffold, cross-cutting concerns, data model, seed data, and the list, get, create,
+> update (PUT) and change-status (PATCH) endpoints. Delete, summary and the UI come in later steps.
 
 ## Prerequisites
 - .NET SDK 9.0.x (`global.json` pins to the 9.0 line and rolls forward to the latest installed 9.0 feature band)
@@ -72,6 +72,8 @@ $env:TASKMANAGER_TEST_CONNECTION = "Server=MYPC\SQLEXPRESS;Database=TaskManagerD
 | GET | `/api/tasks?status=&priority=` | 200 + array of tasks (`[]` when nothing matches) | 400 invalid filter value |
 | POST | `/api/tasks` | 201 + `Location: /api/tasks/{id}` + task | 400 validation / bad JSON, 415 non-JSON body |
 | GET | `/api/tasks/{id}` | 200 + task | 404 unknown, soft-deleted, or invalid id (0, negative, non-numeric) |
+| PUT | `/api/tasks/{id}` | 200 + updated task (new `rowVersion`) | 400 validation / bad rowVersion, 404, **409 stale rowVersion** |
+| PATCH | `/api/tasks/{id}/status` | 200 + task (new `rowVersion`) | 400 invalid status, 404 |
 | GET | `/health` | 200 "Healthy" | |
 | GET | `/openapi/v1.json` | OpenAPI document (Development only) | |
 
@@ -105,8 +107,25 @@ Any other fields (`id`, `isDeleted`, `createdDate`, …) are ignored.
   "rowVersion": "AAAAAAAAB9E="
 }
 ```
-`rowVersion` is the concurrency token. Send it back unchanged when updating (step 6).
 A soft-deleted task is indistinguishable from one that never existed: both return 404.
+
+**Update (PUT `/api/tasks/{id}`)**: a full edit, using optimistic concurrency.
+```json
+{ "title": "…", "description": "…", "status": "InProgress", "priority": "High", "assignedTo": "Bob", "rowVersion": "AAAAAAAAB9E=" }
+```
+- `title`, `status`, `priority` and `rowVersion` are required. It's a full replacement, so an omitted `description`
+  or `assignedTo` is **cleared**.
+- `rowVersion` must be the value from the last response for this task. If the task changed since, the response is
+  **409 Conflict** and nothing is saved. Reload and retry.
+- A missing `rowVersion` returns 400 `errors.rowVersion` ("RowVersion is required."). A malformed or wrong-length one
+  returns 400 ("RowVersion must be the base64 value returned by the API.").
+- `id`, `createdDate`, `modifiedDate` and `isDeleted` can't be changed, and are ignored if sent.
+
+**Change status (PATCH `/api/tasks/{id}/status`)**: body `{ "status": "Done" }`.
+- Last write wins, so no `rowVersion` is needed. Setting the status the task already has changes nothing.
+- The response carries the task's **new** `rowVersion`. Clients must keep it, because a later PUT with the old one gets 409.
+
+**Dates:** `modifiedDate` is set to the current UTC time on every write. `createdDate` never changes.
 
 ## Error responses
 Every error is an RFC 7807 `application/problem+json` body with the same shape:

@@ -96,6 +96,81 @@ GET {{host}}/api/tasks?status=Blocked&priority=Urgent
 ### Numeric priority (expect 400, errors.priority)
 GET {{host}}/api/tasks?priority=2
 
+############ Tasks: update (PUT full edit, optimistic concurrency) ############
+# Run these in order. The GET captures task 1's current rowVersion.
+
+### 1. Read task 1 and remember its rowVersion
+# @name task1
+GET {{host}}/api/tasks/1
+
+### 2. PUT with that rowVersion (expect 200, new values, NEW rowVersion, later modifiedDate, same createdDate)
+PUT {{host}}/api/tasks/1
+Content-Type: application/json
+
+{
+  "title": "Archive old project files (edited)",
+  "description": "Edited from TaskManager.Api.http",
+  "status": "InProgress",
+  "priority": "Medium",
+  "assignedTo": "Bob",
+  "rowVersion": "{{task1.response.body.$.rowVersion}}"
+}
+
+### 3. Run the SAME PUT again: its rowVersion is now stale (expect 409 Conflict)
+PUT {{host}}/api/tasks/1
+Content-Type: application/json
+
+{
+  "title": "A second writer",
+  "status": "Done",
+  "priority": "Low",
+  "rowVersion": "{{task1.response.body.$.rowVersion}}"
+}
+
+### Missing rowVersion (expect 400, errors.rowVersion: "RowVersion is required.")
+PUT {{host}}/api/tasks/1
+Content-Type: application/json
+
+{ "title": "x", "status": "Todo", "priority": "Low" }
+
+### Malformed rowVersion (expect 400, errors.rowVersion: "RowVersion must be the base64 value returned by the API.")
+PUT {{host}}/api/tasks/1
+Content-Type: application/json
+
+{ "title": "x", "status": "Todo", "priority": "Low", "rowVersion": "bad" }
+
+### Soft-deleted task (expect 404)
+PUT {{host}}/api/tasks/13
+Content-Type: application/json
+
+{ "title": "x", "status": "Todo", "priority": "Low", "rowVersion": "AAAAAAAAB9E=" }
+
+############ Tasks: change status (PATCH, last write wins) ############
+
+### Change status (expect 200, status "Done", NEW rowVersion; no rowVersion needed)
+PATCH {{host}}/api/tasks/2/status
+Content-Type: application/json
+
+{ "status": "Done" }
+
+### Same status again (expect 200, nothing changed: same rowVersion and modifiedDate)
+PATCH {{host}}/api/tasks/2/status
+Content-Type: application/json
+
+{ "status": "Done" }
+
+### Invalid status (expect 400, errors.status lists Todo, InProgress, Done)
+PATCH {{host}}/api/tasks/2/status
+Content-Type: application/json
+
+{ "status": "Blocked" }
+
+### Soft-deleted task (expect 404)
+PATCH {{host}}/api/tasks/13/status
+Content-Type: application/json
+
+{ "status": "Done" }
+
 ############ Tasks: get by id ############
 
 ### Seeded active task (expect 200)

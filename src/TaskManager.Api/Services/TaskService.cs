@@ -65,6 +65,58 @@ public sealed class TaskService : ITaskService
     }
 
     /// <inheritdoc />
+    public async Task<TaskResponse> UpdateAsync(int id, UpdateTaskRequest request, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(request);
+
+        var task = await FindTrackedAsync(id, cancellationToken);
+
+        // Optimistic concurrency: EF compares the ORIGINAL value of the concurrency token in the
+        // UPDATE's WHERE clause. Setting it to the client's rowVersion means the update only succeeds
+        // if nobody has changed the row since the client read it; otherwise SaveChanges throws
+        // DbUpdateConcurrencyException, which GlobalExceptionHandler maps to 409.
+        _db.Entry(task).Property(t => t.RowVersion).OriginalValue = RowVersionAttribute.Decode(request.RowVersion!);
+
+        task.Title = request.Title!.Trim();
+        task.Description = NullIfBlank(request.Description);
+        task.Status = EnumNameAttribute.Parse<TaskItemStatus>(request.Status!);
+        task.Priority = EnumNameAttribute.Parse<TaskPriority>(request.Priority!);
+        task.AssignedTo = NullIfBlank(request.AssignedTo);
+        task.ModifiedDate = _timeProvider.GetUtcNow(); // always changes, so an UPDATE (and the concurrency check) always runs
+        // CreatedDate, IsDeleted and Id are never touched.
+
+        await _db.SaveChangesAsync(cancellationToken);
+
+        _logger.LogInformation("Updated task {TaskId}", task.Id);
+        return task.ToResponse();
+    }
+
+    /// <inheritdoc />
+    public async Task<TaskResponse> UpdateStatusAsync(int id, UpdateTaskStatusRequest request, CancellationToken cancellationToken)
+    {
+        ArgumentNullException.ThrowIfNull(request);
+
+        var task = await FindTrackedAsync(id, cancellationToken);
+        var newStatus = EnumNameAttribute.Parse<TaskItemStatus>(request.Status!);
+
+        if (task.Status == newStatus)
+        {
+            return task.ToResponse(); // no-op: nothing written, ModifiedDate and rowVersion unchanged
+        }
+
+        // Last write wins: the client sends no rowVersion. The only possible conflict is a write that
+        // lands between our load and save, which EF reports as DbUpdateConcurrencyException (409).
+        var oldStatus = task.Status;
+        task.Status = newStatus;
+        task.ModifiedDate = _timeProvider.GetUtcNow();
+
+        await _db.SaveChangesAsync(cancellationToken);
+
+        _logger.LogInformation("Changed status of task {TaskId} from {OldStatus} to {NewStatus}", task.Id, oldStatus, newStatus);
+        return task.ToResponse();
+    }
+
+    /// <inheritdoc />
     public async Task<TaskResponse> GetByIdAsync(int id, CancellationToken cancellationToken)
     {
         var task = await _db.Tasks.AsNoTracking().FirstOrDefaultAsync(t => t.Id == id, cancellationToken)
@@ -72,6 +124,11 @@ public sealed class TaskService : ITaskService
 
         return task.ToResponse();
     }
+
+    // Tracked load through the global query filter: unknown and soft-deleted ids are both "not found".
+    private async Task<TaskItem> FindTrackedAsync(int id, CancellationToken cancellationToken) =>
+        await _db.Tasks.FirstOrDefaultAsync(t => t.Id == id, cancellationToken)
+            ?? throw new NotFoundException(ResourceName, id);
 
     private static string? NullIfBlank(string? value) =>
         string.IsNullOrWhiteSpace(value) ? null : value.Trim();
