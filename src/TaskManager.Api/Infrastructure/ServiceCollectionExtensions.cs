@@ -2,13 +2,40 @@ using Microsoft.AspNetCore.Cors.Infrastructure;
 using Microsoft.AspNetCore.HttpLogging;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
+using System.Text.Json.Serialization;
 using TaskManager.Api.Data;
+using TaskManager.Api.Services;
 
 namespace TaskManager.Api.Infrastructure;
 
 /// <summary>Registration helpers for cross-cutting concerns.</summary>
 public static class ServiceCollectionExtensions
 {
+    /// <summary>
+    /// Registers MVC controllers with the API's JSON and validation conventions:
+    /// enums as strings (numbers rejected), no parser/exception details in 400 responses, and
+    /// only explicit <c>[Required]</c> attributes (no implicit "field is required" errors).
+    /// </summary>
+    public static IServiceCollection AddApiControllers(this IServiceCollection services)
+    {
+        services
+            .AddControllers(options => options.SuppressImplicitRequiredAttributeForNonNullableReferenceTypes = true)
+            .AddJsonOptions(options =>
+            {
+                options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter(allowIntegerValues: false));
+                options.AllowInputFormatterExceptionMessages = false;
+            });
+        return services;
+    }
+
+    /// <summary>Registers application services and the system <see cref="TimeProvider"/>.</summary>
+    public static IServiceCollection AddTaskServices(this IServiceCollection services)
+    {
+        services.AddSingleton(TimeProvider.System);
+        services.AddScoped<ITaskService, TaskService>();
+        return services;
+    }
+
     /// <summary>
     /// Registers <see cref="TaskDbContext"/> on SQL Server. The connection string comes from
     /// <c>ConnectionStrings:DefaultConnection</c> and is validated at startup (fails fast if missing).

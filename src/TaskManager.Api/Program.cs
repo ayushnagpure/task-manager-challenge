@@ -1,16 +1,14 @@
-using System.Text.Json.Serialization;
 using TaskManager.Api.Infrastructure;
 
 var builder = WebApplication.CreateBuilder(args);
 
-builder.Services
-    .AddControllers()
-    .AddJsonOptions(options => options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter()));
+builder.Services.AddApiControllers();
 builder.Services.AddOpenApi();
 builder.Services.AddHealthChecks();
 builder.Services.AddApiProblemDetails();
 builder.Services.AddUiCors();
 builder.Services.AddTaskDatabase();
+builder.Services.AddTaskServices();
 builder.Services.AddRequestLogging();
 
 var app = builder.Build();

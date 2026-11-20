@@ -16,3 +16,64 @@ Access-Control-Request-Method: GET
 OPTIONS {{host}}/health
 Origin: http://evil.test
 Access-Control-Request-Method: GET
+
+############ Tasks: create ############
+
+### Create a task (expect 201, Location: /api/tasks/{id}, body with rowVersion)
+# @name createTask
+POST {{host}}/api/tasks
+Content-Type: application/json
+
+{
+  "title": "Try the API by hand",
+  "description": "Created from TaskManager.Api.http",
+  "priority": "High",
+  "assignedTo": "Alice"
+}
+
+### Get the task just created (expect 200, same body)
+GET {{host}}/api/tasks/{{createTask.response.body.$.id}}
+
+### Status omitted + lowercase priority (expect 201, status "Todo", priority "Critical")
+POST {{host}}/api/tasks
+Content-Type: application/json
+
+{ "title": "Defaults", "priority": "critical" }
+
+### Validation: blank title + unknown priority (expect 400, errors.Title and errors.Priority)
+POST {{host}}/api/tasks
+Content-Type: application/json
+
+{ "title": "   ", "priority": "Urgent" }
+
+### Validation: unknown status (expect 400, errors.Status lists Todo, InProgress, Done)
+POST {{host}}/api/tasks
+Content-Type: application/json
+
+{ "title": "Bad status", "status": "Blocked", "priority": "Low" }
+
+### Validation: numeric priority (expect 400, errors["$.priority"]: "The input was not valid.")
+POST {{host}}/api/tasks
+Content-Type: application/json
+
+{ "title": "Numeric", "priority": 2 }
+
+### Malformed JSON (expect 400, no parser or type details in the body)
+POST {{host}}/api/tasks
+Content-Type: application/json
+
+{ "title":
+
+############ Tasks: get by id ############
+
+### Seeded active task (expect 200)
+GET {{host}}/api/tasks/1
+
+### Seeded soft-deleted task (expect 404, same shape as unknown id)
+GET {{host}}/api/tasks/13
+
+### Unknown id (expect 404 "Task with id '999999' was not found.")
+GET {{host}}/api/tasks/999999
+
+### id = 0 (expect 404 ProblemDetails; route constraint is {id:int:min(1)})
+GET {{host}}/api/tasks/0

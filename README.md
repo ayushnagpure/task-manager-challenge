@@ -2,8 +2,8 @@
 
 A small task management app: a .NET 9 Web API (EF Core Code First, SQL Server) and a React + Vite UI.
 
-> Status: **step 3 of 11**: scaffold, cross-cutting concerns, data model and seed data.
-> Task endpoints and the UI come in later steps.
+> Status: **step 4 of 11**: scaffold, cross-cutting concerns, data model, seed data, and create/get-by-id
+> endpoints. List, update, delete, summary and the UI come in later steps.
 
 ## Prerequisites
 - .NET SDK 9.0.x (`global.json` pins to the 9.0 line and rolls forward to the latest installed 9.0 feature band)
@@ -67,17 +67,47 @@ $env:TASKMANAGER_TEST_CONNECTION = "Server=MYPC\SQLEXPRESS;Database=TaskManagerD
 `src/TaskManager.Api/TaskManager.Api.http` has ready-made requests (VS / VS Code REST Client / Rider).
 
 ## Endpoints (so far)
-| Method | Path      | Notes                     |
-|--------|-----------|---------------------------|
-| GET    | `/health` | Liveness check, "Healthy" |
-| GET    | `/openapi/v1.json` | OpenAPI document (Development only) |
+| Method | Path | Success | Errors |
+|--------|------|---------|--------|
+| POST | `/api/tasks` | 201 + `Location: /api/tasks/{id}` + task | 400 validation / bad JSON, 415 non-JSON body |
+| GET | `/api/tasks/{id}` | 200 + task | 404 unknown, soft-deleted, or invalid id (0, negative, non-numeric) |
+| GET | `/health` | 200 "Healthy" | |
+| GET | `/openapi/v1.json` | OpenAPI document (Development only) | |
+
+**Create request**:
+```json
+{ "title": "Write release notes", "description": "optional", "status": "Todo", "priority": "High", "assignedTo": "Alice" }
+```
+| Field | Rules |
+|-------|-------|
+| `title` | required, not blank, max 200 characters; trimmed |
+| `description` | optional, max 2000 characters; blank becomes null |
+| `status` | optional, `Todo` / `InProgress` / `Done` (case-insensitive); defaults to `Todo` |
+| `priority` | **required**, `Low` / `Medium` / `High` / `Critical` (case-insensitive); numbers rejected |
+| `assignedTo` | optional, max 100 characters; blank becomes null |
+
+Any other fields (`id`, `isDeleted`, `createdDate`, …) are ignored.
+
+**Task response** (POST and GET return the same shape):
+```json
+{
+  "id": 16, "title": "Write release notes", "description": "optional", "status": "Todo", "priority": "High",
+  "assignedTo": "Alice", "createdDate": "2026-11-20T10:00:00+00:00", "modifiedDate": "2026-11-20T10:00:00+00:00",
+  "rowVersion": "AAAAAAAAB9E="
+}
+```
+`rowVersion` is the concurrency token. Send it back unchanged when updating (step 6).
+A soft-deleted task is indistinguishable from one that never existed: both return 404.
 
 ## Error responses
 Every error is an RFC 7807 `application/problem+json` body with the same shape:
 ```json
 { "type": "...", "title": "Not Found", "status": 404, "detail": "...", "instance": "GET /nope", "traceId": "00-..." }
 ```
-- Validation errors (400) add an `errors` object keyed by field.
+- Validation errors (400) add an `errors` object keyed by field (`Title`, `Priority`, …), with messages such as
+  `"Priority must be one of: Low, Medium, High, Critical."`. Malformed JSON and wrong JSON types (e.g. a number
+  for `priority`) are reported under a JSON-path key such as `$.priority` with the generic message
+  `"The input was not valid."`. Parser and type details are never returned.
 - Unhandled exceptions return a generic 500. The exception message and stack trace are logged server-side
   only and never returned. Quote `traceId` to find the log entry.
 - Unknown routes (404) and wrong methods (405) use the same shape.
