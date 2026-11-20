@@ -1,0 +1,18 @@
+@host = http://localhost:5157
+
+### Health check (expect 200 "Healthy")
+GET {{host}}/health
+
+### Unknown route (expect 404 application/problem+json with traceId)
+GET {{host}}/nope
+Accept: application/json
+
+### CORS preflight from the UI origin (expect Access-Control-Allow-Origin: http://localhost:5173)
+OPTIONS {{host}}/health
+Origin: http://localhost:5173
+Access-Control-Request-Method: GET
+
+### CORS preflight from an unknown origin (expect NO Access-Control-Allow-Origin header)
+OPTIONS {{host}}/health
+Origin: http://evil.test
+Access-Control-Request-Method: GET

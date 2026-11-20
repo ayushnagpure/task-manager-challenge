@@ -1,0 +1,17 @@
+<Project>
+  <!-- Central package management. All Microsoft.* framework packages are pinned to 9.0.x (never 10.x). -->
+  <PropertyGroup>
+    <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
+  </PropertyGroup>
+  <ItemGroup Label="API">
+    <PackageVersion Include="Microsoft.AspNetCore.OpenApi" Version="9.0.11" />
+  </ItemGroup>
+  <ItemGroup Label="Tests">
+    <PackageVersion Include="Microsoft.AspNetCore.Mvc.Testing" Version="9.0.11" />
+    <!-- Test SDK is versioned independently of .NET (no 9.0.x line exists). -->
+    <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="17.12.0" />
+    <PackageVersion Include="xunit" Version="2.9.2" />
+    <PackageVersion Include="xunit.runner.visualstudio" Version="2.8.2" />
+    <PackageVersion Include="coverlet.collector" Version="6.0.2" />
+  </ItemGroup>
+</Project>
