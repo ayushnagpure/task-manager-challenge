@@ -1,0 +1,1228 @@
+ ▐▛███▛█   Claude Code v2.1.328
+▝▜██████▀  Opus 5.5 · Claude Pro
+ ▝▝   ▝▝   C:\LitmosAssessment\TaskManager
+
+
+> I'm working on a small task management app and want to use you as my pair     
+  throughout. CLAUDE.md in the repo root has my conventions, so please read it  
+  first.                                                                        
+                                                                                
+  The goal is a small task management app. .NET 9 Web API with EF Core code     
+  first                                                                         
+  on my local SQL Server Express (localhost\SQLEXPRESS), and a simple React +   
+  Vite                                                                          
+  front end on top. Users can list tasks (filter by status and priority), view  
+  one,                                                                          
+  create, update, and soft delete. There also needs to be a                     
+  GET /api/tasks/summary endpoint that uses raw SQL, not EF, to return task     
+  counts                                                                        
+  grouped by status and priority.                                               
+                                                                                
+  I don't want any code yet. I'd like to prepare a plan first. Can you propose: 
+                                                                                
+  - how you'd lay out the solution (api, tests, ui), and whether a small shared 
+    library is worth it here                                                    
+  - how you'd model the Task entity and handle soft delete                      
+  - how you'd do validation and a global exception handler so every error comes 
+    back in the same shape                                                      
+  - where logging should go                                                     
+  - how we'd seed 10 or so sample tasks                                         
+  - how we'd test it. so I want failure cases                                   
+    and filtering covered too                                                   
+  - a breakdown into small steps where each one can be built, tested and        
+  committed                                                                     
+    on its own                                                                  
+                                                                                
+  For Security taking CORS, config/secrets and                                  
+  the raw SQL that we should handle properly from the start.                    
+                                                                                
+  If you're unsure about something , tell me instead of picking                 
+  quietly. I'd rather decide than find out later. Don't start implementing      
+  until we confirm the plan.                                                    
+
+  Searched for 1 pattern, ran 1 shell command (ctrl+o to expand)
+
+● Updated plan
+  ⎿  /plan to preview
+
+● Answered Claude's questions:
+  ⎿  · Integration tests need a database. Which strategy should the API tests 
+     use? → SQLEXPRESS test DB (Recommended)
+     · "Not EF" for the summary endpoint: how should the raw SQL be executed? → 
+     Plain ADO.NET (SqlCommand)
+     · What shape should GET /api/tasks/summary return? → Flat list only
+     · How should the schema and the ~10 sample tasks get into the database? → 
+     HasData in migration
+
+● Updated plan
+  ⎿  /plan to preview
+
+● Updated plan
+  ⎿  /plan to preview
+
+● Updated plan
+  ⎿  /plan to preview
+
+● Updated plan
+  ⎿  /plan to preview
+
+● Updated plan
+  ⎿  /plan to preview
+
+● Updated plan
+  ⎿  /plan to preview
+
+● Updated plan
+  ⎿  /plan to preview
+
+● Updated plan
+  ⎿  /plan to preview
+  ⎿  Rejected Claude's plan:
+     ╭─────────────────────────────────────────────────────────────────────────╮
+     │ Task Manager — Implementation Plan                                      │
+     │                                                                         │
+     │ Context                                                                 │
+     │                                                                         │
+     │ The repo is empty except for CLAUDE.md, .gitignore and                  │
+     │ docs/claude-logs. We're building a small task manager:                  │
+     │ a .NET 9 Web API (EF Core Code First, SQL Server Express                │
+     │ localhost\SQLEXPRESS, DB TaskManagerDb)                                 │
+     │ with a React + Vite UI. Features: list (filter by status/priority), get │
+     │ by id, create, update, soft delete,                                     │
+     │ and GET /api/tasks/summary using raw SQL (not EF) for counts grouped by │
+     │ status and priority.                                                    │
+     │ Environment checked: .NET SDK 9.0.307 is installed (along with 6/7/8),  │
+     │ Node 26 / npm 11.                                                       │
+     │                                                                         │
+     │ Decisions made with you                                                 │
+     │                                                                         │
+     │ Test DB: SQLEXPRESS TaskManagerDb_Tests + Respawn · Raw SQL: plain      │
+     │ ADO.NET · Summary: flat list ·                                          │
+     │ Seeding: HasData in migration.                                          │
+     │                                                                         │
+     │ Defaults I picked: say if you want any changed: int identity ids; PUT   │
+     │ full update with                                                        │
+     │ rowversion → 409 on conflict; DataAnnotations (no FluentValidation); no │
+     │ pagination on the list (small                                           │
+     │ dataset); no authentication; built-in logging (no Serilog); UI calls    │
+     │ the API directly via                                                    │
+     │ VITE_API_BASE_URL + CORS (no Vite proxy); FluentAssertions not used     │
+     │ (licence change in v8), plain xUnit Assert.                             │
+     │                                                                         │
+     │ 1. Solution layout                                                      │
+     │                                                                         │
+     │ TaskManager.sln                                                         │
+     │ global.json                      # pins SDK 9.0.307 (rollForward:       │
+     │ latestPatch)                                                            │
+     │ Directory.Build.props            # net9.0, Nullable, ImplicitUsings,    │
+     │ TreatWarningsAsErrors, XML docs on                                      │
+     │ Directory.Packages.props         # central package mgmt, every          │
+     │ Microsoft.* pinned to 9.0.x                                             │
+     │ src/TaskManager.Api/                                                    │
+     │   Controllers/  TasksController.cs                                      │
+     │   Contracts/    TaskResponse, CreateTaskRequest, UpdateTaskRequest,     │
+     │ TaskQuery, TaskSummaryResponse                                          │
+     │   Domain/       TaskItem.cs, TaskItemStatus.cs, TaskPriority.cs,        │
+     │ NotFoundException.cs                                                    │
+     │   Data/         TaskDbContext.cs,                                       │
+     │ Configurations/TaskItemConfiguration.cs, SeedData.cs, Migrations/       │
+     │   Services/     ITaskService/TaskService (EF),                          │
+     │ ITaskSummaryService/TaskSummaryService (raw SQL)                        │
+     │   Infrastructure/ GlobalExceptionHandler.cs,                            │
+     │ ServiceCollectionExtensions.cs                                          │
+     │   Program.cs                                                            │
+     │ tests/TaskManager.Tests/                                                │
+     │   Unit/         validation + mapping tests (no DB)                      │
+     │   Integration/  WebApplicationFactory + real SQL Server test DB, one    │
+     │ class per endpoint                                                      │
+     │ src/task-manager-ui/                                                    │
+     │   src/api/      httpClient.js (base URL, ProblemDetails parsing),       │
+     │ tasksApi.js                                                             │
+     │   src/components/ TaskList, TaskFilters, TaskDetail, TaskForm,          │
+     │ TaskSummary, ErrorBanner (one per file)                                 │
+     │   src/hooks/    useTasks.js etc.                                        │
+     │ Shared library: not worth it. The only C# consumers are the API and its │
+     │ tests; the UI is JS so it                                               │
+     │ can't share DTOs. A separate Core/Infrastructure split adds projects    │
+     │ and ceremony for ~5 endpoints.                                          │
+     │ Folders inside the API project give the same separation; easy to        │
+     │ extract later if the app grows.                                         │
+     │                                                                         │
+     │ Entity is named TaskItem (not Task) to avoid clashing with              │
+     │ System.Threading.Tasks.Task;                                            │
+     │ the table is still Tasks and the route is still /api/tasks.             │
+     │                                                                         │
+     │ 2. Task entity & soft delete                                            │
+     │                                                                         │
+     │ TaskItem: Id (int identity), Title (required, max 200), Description     │
+     │ (nullable, max 2000),                                                   │
+     │ Status (enum: Todo, InProgress, Done), Priority (enum: Low, Medium,     │
+     │ High), DueDate (DateOnly?),                                             │
+     │ CreatedAt / UpdatedAt (DateTimeOffset, UTC), IsDeleted (bool, default   │
+     │ false), DeletedAt                                                       │
+     │ (DateTimeOffset?), RowVersion (rowversion, optimistic concurrency).     │
+     │                                                                         │
+     │ - Enums stored as strings: HasConversion<string>().HasMaxLength(20);    │
+     │   JSON uses JsonStringEnumConverter.                                    │
+     │ - Global query filter HasQueryFilter(t => !t.IsDeleted).                │
+     │ - Index on (IsDeleted, Status, Priority) to support filtering and the   │
+     │   summary query.                                                        │
+     │ - Soft delete done explicitly in TaskService.DeleteAsync (set           │
+     │   IsDeleted, DeletedAt), not via an                                     │
+     │   interceptor — simpler and obvious. Deleting a missing or              │
+     │   already-deleted task returns 404.                                     │
+     │ - Timestamps set in the service from an injected TimeProvider           │
+     │   (deterministic in tests).                                             │
+     │ - Update = PUT (full replace) carrying rowVersion; stale version → 409  │
+     │   Conflict.                                                             │
+     │                                                                         │
+     │ 3. Validation & one error shape                                         │
+     │                                                                         │
+     │ Every error is RFC 7807 application/problem+json with traceId:          │
+     │ - Validation: DataAnnotations on request DTOs + [ApiController]         │
+     │   automatic 400 →                                                       │
+     │   ValidationProblemDetails (errors: { field: [msgs] }). Invalid enum    │
+     │   strings / malformed JSON /                                            │
+     │   bad query values also land here via model binding. A small custom     │
+     │   attribute covers rules like                                           │
+     │   "enum value must be defined".                                         │
+     │ - Exceptions: IExceptionHandler (GlobalExceptionHandler) +              │
+     │   AddProblemDetails():                                                  │
+     │   NotFoundException → 404, DbUpdateConcurrencyException → 409,          │
+     │   BadHttpRequestException → 400,                                        │
+     │   anything else → 500 with generic title/detail. Never includes         │
+     │   exception message or stack trace.                                     │
+     │ - UseStatusCodePages() so bare 404/405 (unknown routes) also return     │
+     │   ProblemDetails.                                                       │
+     │ - CustomizeProblemDetails adds traceId and instance consistently.       │
+     │ - UI httpClient.js parses ProblemDetails once and surfaces title +      │
+     │   field errors to forms.                                                │
+     │                                                                         │
+     │ 4. Logging (built-in ILogger, no Serilog)                               │
+     │                                                                         │
+     │ - Middleware boundary: GlobalExceptionHandler logs unhandled exceptions │
+     │   at Error (full exception,                                             │
+     │   server-side only) with traceId; handled 4xx at Warning/Information.   │
+     │   UseHttpLogging limited to                                             │
+     │   method/path/status/duration (no bodies).                              │
+     │ - Service boundary: structured messages, e.g. "Created task {TaskId}    │
+     │   with priority {Priority}",                                            │
+     │   "Task {TaskId} not found", "Soft-deleted task {TaskId}", summary      │
+     │   query timing at Debug.                                                │
+     │ - Never log request bodies or connection strings. Levels configured in  │
+     │   appsettings.                                                          │
+     │                                                                         │
+     │ 5. Seeding ~10 sample tasks (decided: HasData in migration)             │
+     │                                                                         │
+     │ - TaskItemConfiguration calls HasData(SeedData.Tasks) with 12 tasks:    │
+     │   fixed Ids 1–12, fixed                                                 │
+     │   literal CreatedAt/UpdatedAt/DueDate values (no DateTime.UtcNow,       │
+     │   otherwise every new migration                                         │
+     │   re-emits the seed rows), covering every status × priority             │
+     │   combination, one or two pre-soft-deleted.                             │
+     │ - Seed data lives in Data/SeedData.cs; it ships in the migration, so it │
+     │   will exist in any DB the                                              │
+     │   migration is applied to (you accepted this trade-off).                │
+     │ - Schema + seed applied with dotnet ef database update (README          │
+     │   documents it).                                                        │
+     │ - Test DB: migration inserts the seed rows; Respawn wipes Tasks before  │
+     │   each test so tests build their                                        │
+     │   own fixture data and don't depend on seed contents. One test asserts  │
+     │   the seed exists after migrating.                                      │
+     │                                                                         │
+     │ 6. Raw SQL summary                                                      │
+     │                                                                         │
+     │ Decided: plain ADO.NET (Microsoft.Data.SqlClient                        │
+     │ SqlConnection/SqlCommand, ExecuteReaderAsync,                           │
+     │ ordinal-based reads, enum strings parsed back with Enum.Parse).         │
+     │ Connection string comes from                                            │
+     │ IConfiguration / options, not from the DbContext. Constant SQL string,  │
+     │ no concatenation:                                                       │
+     │ SELECT Status, Priority, COUNT(*) AS Count                              │
+     │ FROM dbo.Tasks WHERE IsDeleted = 0                                      │
+     │ GROUP BY Status, Priority;                                              │
+     │ - Must filter IsDeleted = 0 manually (global query filter doesn't apply │
+     │   to raw SQL) — test covers this.                                       │
+     │ - Any future filters go through typed SqlParameters only.               │
+     │ - Same ConnectionStrings:DefaultConnection; async with                  │
+     │   CancellationToken; ORDER BY Status, Priority                          │
+     │   for stable output.                                                    │
+     │ - Decided response: flat list [{ "status": "Todo", "priority": "High",  │
+     │   "count": 3 }, ...], only                                              │
+     │   combinations that have tasks; the UI computes any totals. Empty DB →  │
+     │   [].                                                                   │
+     │                                                                         │
+     │ 7. Security from the start                                              │
+     │                                                                         │
+     │ - CORS: named policy; origins from config Cors:AllowedOrigins (dev:     │
+     │   http://localhost:5173);                                               │
+     │   explicit methods (GET/POST/PUT/DELETE) and Content-Type header; never │
+     │   AllowAnyOrigin. Startup                                               │
+     │   fails fast if the list is empty outside Development.                  │
+     │ - Config/secrets: appsettings.json has no connection string; dev value  │
+     │   (Windows auth, no secret)                                             │
+     │   in appsettings.Development.json; other environments via env var       │
+     │   ConnectionStrings__DefaultConnection or user-secrets. Startup         │
+     │   validates the connection string exists.                               │
+     │   README documents changing it for another machine. Connection string   │
+     │   includes TrustServerCertificate=True                                  │
+     │   for local Express only.                                               │
+     │ - Raw SQL: parameterized only (above); EF handles everything else.      │
+     │ - Input: max lengths, enum checks, route ids constrained                │
+     │   {id:int:min(1)}, request body size default.                           │
+     │ - HTTPS redirection + HSTS outside Development.                         │
+     │ - No authentication — not requested; flagging that every endpoint is    │
+     │   anonymous.                                                            │
+     │                                                                         │
+     │ 8. Testing                                                              │
+     │                                                                         │
+     │ API (xUnit) — WebApplicationFactory<Program> against a separate         │
+     │ TaskManagerDb_Tests DB on                                               │
+     │ SQLEXPRESS (migrated once per run, data reset between tests). Real SQL  │
+     │ Server is needed because the summary                                    │
+     │ SQL and string-enum/rowversion behaviour must be verified for real; EF  │
+     │ InMemory can't run raw SQL.                                             │
+     │ Libraries: xUnit, Microsoft.AspNetCore.Mvc.Testing 9.0.x, Respawn for   │
+     │ resets, plain Assert.                                                   │
+     │                                                                         │
+     │ Cases:                                                                  │
+     │ - Create: valid → 201 + Location; missing/blank title → 400             │
+     │   errors.Title; title >200 → 400;                                       │
+     │   invalid status/priority string → 400; malformed JSON → 400            │
+     │   ProblemDetails.                                                       │
+     │ - Get: existing → 200; unknown id → 404 ProblemDetails; soft-deleted id │
+     │   → 404; id=0 → 404/400.                                                │
+     │ - List: no filter; by status; by priority; both; filter matching        │
+     │   nothing → empty array;                                                │
+     │   invalid filter value → 400; deleted tasks never returned.             │
+     │ - Update: valid → 200 with new values + UpdatedAt; unknown → 404;       │
+     │   deleted → 404; invalid body → 400;                                    │
+     │   stale rowVersion → 409.                                               │
+     │ - Delete: → 204, then GET 404, row still in DB with IsDeleted=1; delete │
+     │   twice → 404.                                                          │
+     │ - Summary: counts correct for a known fixture; combinations with no     │
+     │   tasks absent; excludes deleted;                                       │
+     │   empty DB → [].                                                        │
+     │ - Errors: forced exception (test-only endpoint registered in the        │
+     │   factory) → 500 ProblemDetails with                                    │
+     │   no stack trace/message; unknown route → 404 ProblemDetails.           │
+     │ - CORS: preflight from allowed origin gets Access-Control-Allow-Origin; │
+     │   other origin doesn't.                                                 │
+     │   Unit: DTO validation attributes, entity↔DTO mapping.                  │
+     │   UI (Vitest + React Testing Library): api layer (URL/query building,   │
+     │   ProblemDetails → error object),                                       │
+     │   TaskFilters changes call API with right params, TaskForm shows server │
+     │   validation errors, delete flow.                                       │
+     │                                                                         │
+     │ 9. Step-by-step breakdown (each: build → test → you commit)             │
+     │                                                                         │
+     │ 1. Scaffold: sln, global.json, Directory.*.props, Api + Tests projects, │
+     │    /health endpoint, smoke test.                                        │
+     │ 2. Cross-cutting: ProblemDetails + GlobalExceptionHandler, status code  │
+     │    pages, logging config,                                               │
+     │    CORS from config, config validation. Tests: 500 shape, 404 shape,    │
+     │    CORS.                                                                │
+     │ 3. Data model: TaskItem, enums, DbContext, configuration, soft-delete   │
+     │    filter, initial migration,                                           │
+     │    test DB fixture. Test: filter hides deleted rows.                    │
+     │ 4. Seeding: SeedData + HasData, new migration. Test: seed rows present  │
+     │    after migrate.                                                       │
+     │ 5. Create + Get by id: DTOs, validation, service, controller. Tests     │
+     │    above.                                                               │
+     │ 6. List with filters. Tests above.                                      │
+     │ 7. Update (PUT + concurrency). Tests above.                             │
+     │ 8. Soft delete. Tests above.                                            │
+     │ 9. Summary (raw SQL). Tests above.                                      │
+     │ 10. UI scaffold: Vite app, api layer, task list + filters, Vitest       │
+     │     setup.                                                              │
+     │ 11. UI detail + create/edit form with server error display.             │
+     │ 12. UI delete + summary view; README final pass (README updated in      │
+     │     every step anyway).                                                 │
+     │                                                                         │
+     │ Verification                                                            │
+     │                                                                         │
+     │ - dotnet test green at every backend step (requires SQLEXPRESS          │
+     │   running).                                                             │
+     │ - dotnet ef database update then dotnet run → exercise endpoints via a  │
+     │   checked-in TaskManager.Api.http.                                      │
+     │ - npm test (Vitest) and npm run dev for UI steps; manual check          │
+     │   list/filter/create/edit/delete/summary.                               │
+     ╰─────────────────────────────────────────────────────────────────────────╯
+
+> A few things I need to change                                                 
+  The plans says Priority includes Critical, so please add it (Low, Medium,     
+  High,                                                                         
+  Critical). It also requires an AssignedTo string field, which isn't in the    
+  entity.                                                                       
+  And I'd like to use the brief's names, CreatedDate and ModifiedDate, instead  
+  of                                                                            
+  CreatedAt/UpdatedAt.                                                          
+                                                                                
+  For seeding, with four priorities there are 12 combinations, so let's seed    
+  about                                                                         
+  15 tasks with at least 10 not deleted, and varied AssignedTo values.          
+                                                                                
+  For the list endpoint, please define the default sort explicitly (priority    
+  descending, then CreatedDate descending) so we have a clear LINQ filter and   
+  sort                                                                          
+  example. Add the ORDER BY to the summary SQL too.                             
+                                                                                
+  I'm not sure the full PUT with rowVersion is nice for a status dropdown. Tell 
+  me                                                                            
+  whether you'd add a PATCH for status or keep PUT, and why, before we build    
+  it.                                                                           
+                                                                                
+  Also add one unit test for a TaskService method using a fake TimeProvider,    
+  make                                                                          
+  Respawn ignore __EFMigrationsHistory, and loosen global.json to               
+  latestFeature.                                                                
+                                                                                
+  Merge steps 1 and 2 into one iteration. Then start with that step only. Don't 
+  commit anything, and tell me what to run to verify it.                        
+
+● Updated plan
+  ⎿  /plan to preview
+
+● Approved Claude's plan
+  ⎿  Plan saved to: 
+     ~\.claude\plans\pasted-content-id-0656-i-m-working-expressive-umbrella.md ·
+     /plan to edit
+     Task Manager — Implementation Plan (rev 2)
+
+     Context
+
+     The repo is empty except for CLAUDE.md, .gitignore and docs/claude-logs.
+     We're building a small task manager:
+     a .NET 9 Web API (EF Core Code First, SQL Server Express
+     localhost\SQLEXPRESS, DB TaskManagerDb)
+     with a React + Vite UI. Features: list (filter by status/priority), get by
+     id, create, update, soft delete,
+     and GET /api/tasks/summary using raw SQL (not EF) for counts grouped by
+     status and priority.
+     Environment: .NET SDK 9.0.307 installed (plus 6/7/8), Node 26 / npm 11.
+
+     Decisions
+
+     - Test DB: SQLEXPRESS TaskManagerDb_Tests + Respawn (ignores
+       __EFMigrationsHistory)
+     - Raw SQL: plain ADO.NET (Microsoft.Data.SqlClient)
+     - Summary: flat list, only combinations that have tasks
+     - Seeding: HasData in migration, ~15 tasks
+     - Priority: Low, Medium, High, Critical. Entity has AssignedTo. Timestamps
+       are CreatedDate / ModifiedDate
+     - global.json: 9.0.100 with rollForward: latestFeature (stays on 9.0.x and
+       never moves to 10)
+     - Steps 1 and 2 merged into one iteration
+     - Defaults (change any you like): int identity ids; DataAnnotations; no
+       list pagination; no auth;
+       built-in logging; UI calls API via VITE_API_BASE_URL + CORS; plain xUnit
+       Assert
+
+     1. Solution layout
+
+     TaskManager.sln, global.json, Directory.Build.props, 
+     Directory.Packages.props (central, Microsoft.* 9.0.x)
+     src/TaskManager.Api/   Controllers/ Contracts/ Domain/ Data/ Services/ 
+     Infrastructure/ Program.cs
+     tests/TaskManager.Tests/  Unit/  Integration/
+     src/task-manager-ui/   src/api/ src/components/ src/hooks/
+     No shared library: the API and its tests are the only C# consumers, and the
+     UI is JS. Entity is TaskItem
+     so it doesn't clash with System.Threading.Tasks.Task. The table is Tasks
+     and the route is /api/tasks.
+
+     2. Entity & soft delete
+
+     TaskItem: Id int; Title required, max 200; Description max 2000 (nullable);
+     Status (Todo,
+     InProgress, Done); Priority (Low, Medium, High, Critical); AssignedTo
+     (nullable, max 100);
+     DueDate (DateOnly?); CreatedDate / ModifiedDate (DateTimeOffset, UTC, from
+     injected
+     TimeProvider); IsDeleted; DeletedDate (DateTimeOffset?); RowVersion
+     (rowversion).
+     - Enums stored as strings (HasConversion<string>(), max 20). The API uses
+       JsonStringEnumConverter.
+     - Global filter !IsDeleted. Index on (IsDeleted, Status, Priority).
+     - Soft delete happens explicitly in the service. Deleting a missing or
+       already-deleted task returns 404.
+
+     Sorting caveat: because enums are stored as strings, a plain ORDER BY 
+     Priority sorts alphabetically
+     (Critical, High, Low, Medium). Both the LINQ and the SQL sort map priority
+     to a rank with a CASE:
+     - LINQ (list): query.Where(status?).Where(priority?)
+       .OrderByDescending(t => t.Priority == Critical ? 4 : t.Priority == High ?
+       3 : t.Priority == Medium ? 2 : 1)
+       .ThenByDescending(t => t.CreatedDate). EF translates this to SQL CASE. A
+       test checks the order.
+     - Summary SQL:
+     SELECT Status, Priority, COUNT(*) AS [Count]
+     FROM dbo.Tasks
+     WHERE IsDeleted = 0
+     GROUP BY Status, Priority
+     ORDER BY CASE Status WHEN 'Todo' THEN 1 WHEN 'InProgress' THEN 2 WHEN
+     'Done' THEN 3 END,
+              CASE Priority WHEN 'Critical' THEN 1 WHEN 'High' THEN 2 WHEN
+     'Medium' THEN 3 WHEN 'Low' THEN 4 END;
+       The SQL is a constant string. Any future filters will go only through
+     typed SqlParameters.
+
+     3. Update: PUT vs PATCH (decide before step 7)
+
+     My recommendation is to keep PUT for the edit form and also add PATCH 
+     /api/tasks/{id}/status
+     with body { "status": "Done" }. It returns the updated TaskResponse,
+     including the new rowVersion.
+     - A dropdown that has to send title, description, assignee etc. back just
+       to change status is wasteful.
+       It also risks overwriting another user's edits with stale values. That
+       second problem is worse than a 409.
+     - A single-field, purpose-built endpoint is easy to validate with
+       DataAnnotations. I'm not using JSON Patch
+       (RFC 6902): it needs Newtonsoft and generic operations are hard to
+       validate.
+     - The status PATCH doesn't require a rowVersion: last write wins for that
+       one field, which is the sensible
+       behaviour for a status toggle. PUT keeps rowVersion → 409, because it
+       replaces every field.
+     - The UI must replace its cached task (rowVersion included) with the PATCH
+       response so a later PUT doesn't 409.
+       If you prefer one endpoint only, the alternative is keeping PUT and
+       having the dropdown send the full task.
+
+     4. Validation & errors (one shape: RFC 7807 ProblemDetails + traceId)
+
+     - [ApiController] + DataAnnotations → 400 ValidationProblemDetails. Bad
+       enum, JSON or query values also end up here.
+     - GlobalExceptionHandler : IExceptionHandler + AddProblemDetails():
+       NotFoundException→404,
+       DbUpdateConcurrencyException→409, BadHttpRequestException→400, everything
+       else→500 with a generic message.
+       No stack trace and no exception message is sent to the client.
+     - UseStatusCodePages() so unknown routes and 405s also return
+       ProblemDetails. CustomizeProblemDetails adds traceId.
+
+     5. Logging
+
+     Built-in ILogger. Exceptions are logged in the handler with the traceId
+     (Error for 5xx, Warning for 4xx).
+     UseHttpLogging records method, path, status and duration only (no bodies).
+     Services log structured events
+     ({TaskId}, {Priority}). Connection strings and bodies are never logged.
+
+     6. Seeding (HasData)
+
+     Data/SeedData.cs: 15 tasks with fixed Ids 1–15 and literal dates, so new
+     migrations don't keep
+     re-emitting the seed rows. 12 are active and cover all 12 status × priority
+     combinations. 3 are soft-deleted.
+     AssignedTo varies (e.g. "alice", "bob", "chen", "dana", plus a few
+     unassigned).
+     Seed rows also land in the test DB. Respawn wipes Tasks before each test,
+     so tests build their own data.
+
+     7. Security
+
+     - CORS: named policy, origins from Cors:AllowedOrigins (dev
+       http://localhost:5173), explicit methods
+       (GET/POST/PUT/PATCH/DELETE) and the Content-Type header. No
+       AllowAnyOrigin. Startup fails fast outside
+       Development if the list is empty.
+     - Config: appsettings.json has no connection string. The dev value (Windows
+       auth, no secret) goes in
+       appsettings.Development.json. Other environments use env var
+       ConnectionStrings__DefaultConnection or
+       user-secrets. The connection string is validated at startup.
+     - Raw SQL is parameterized only. Route ids use {id:int:min(1)}. HTTPS
+       redirection and HSTS outside Development.
+     - No authentication (it wasn't requested).
+
+     8. Testing
+
+     - Integration (WebApplicationFactory<Program>, TaskManagerDb_Tests, Respawn
+       with
+       TablesToIgnore = ["__EFMigrationsHistory"]):
+       - create (201 / 400 on title, enum and malformed JSON)
+       - get (200 / 404 / deleted → 404)
+       - list (each filter, both filters, no match, invalid value → 400, deleted
+         excluded, sort order
+         with Critical first and newest first within a priority)
+       - update (200 / 404 / 400 / stale rowVersion → 409)
+       - status PATCH, if approved
+       - delete (204, then 404; row still present; deleting twice → 404)
+       - summary (counts, absent combos, deleted excluded, ordering, empty → [])
+       - errors (500 shape without stack trace, 404 route shape)
+       - CORS (preflight allowed and denied)
+     - Unit:
+       - DTO validation
+       - TaskService.CreateAsync with FakeTimeProvider
+         (Microsoft.Extensions.TimeProvider.Testing
+         9.0.x) asserting CreatedDate == ModifiedDate == fake now. It uses the
+         EF InMemory provider (9.0.x),
+         since this test only checks service logic and not SQL. Real SQL
+         behaviour stays in the integration tests.
+     - UI (Vitest + RTL): the api layer (query building, ProblemDetails
+       parsing), filters, form errors, delete flow.
+
+     9. Steps (each: build → dotnet test → you commit)
+
+     1. Scaffold + cross-cutting (merged): sln, global.json, Directory.*.props,
+        Api + Tests projects,
+        /health, ProblemDetails + GlobalExceptionHandler, status code pages,
+        logging, CORS from config, config
+        validation, README. Tests: health 200, 500 shape (test-only throwing
+        endpoint), unknown route → 404
+        ProblemDetails, CORS allowed and denied. No DB is needed yet: the
+        connection string check comes in step 2.
+     2. Data model + migration + soft-delete filter + test DB fixture (Respawn).
+     3. Seeding (HasData, 15 tasks).
+     4. Create + get by id (+ FakeTimeProvider unit test).
+     5. List with filters + explicit sort.
+     6. Update (PUT, + PATCH status if approved).
+     7. Soft delete.
+     8. Summary (ADO.NET).
+     9. UI scaffold + api layer + list/filters.
+     10. UI detail + create/edit form.
+     11. UI delete + status dropdown + summary view; README pass.
+
+     Verification for step 1
+
+     dotnet build, dotnet test, then dotnet run --project src/TaskManager.Api
+     and check:
+     - GET /health → 200
+     - GET /nope → 404 problem+json
+     - a preflight OPTIONS with Origin: http://localhost:5173 returns the
+       allow-origin header
+     - the same preflight with Origin: http://evil.test does not
+
+     ---
+     Plan looks good, and I agree with PUT plus a status PATCH. Go ahead with
+     step 1
+     only. Please don't commit anything, and don't start step 2. When you're
+     done,
+     tell me exactly what to run to verify it, including the preflight check,
+     and
+     tell me which files you created so I can review them before I commit.
+
+● Plan approved. Starting step 1: scaffold plus cross-cutting concerns.
+
+  Ran 1 shell command (ctrl+o to expand)
+
+> Plan looks good, and I agree with PUT plus a status PATCH. Go ahead with step 
+  1                                                                             
+  only. Please don't commit anything, and don't start step 2. When you're done, 
+  tell me exactly what to run to verify it, including the preflight check, and  
+  tell me which files you created so I can review them before I commit.         
+
+  Read 5 files, ran 1 shell command (ctrl+o to expand)
+
+● Write(global.json)
+  ⎿  Wrote 6 lines to global.json
+      1 {
+      2   "sdk": {
+      3     "version": "9.0.100",
+      4     "rollForward": "latestFeature"
+      5   }
+      6 }
+
+● Write(Directory.Build.props)
+  ⎿  Wrote 8 lines to Directory.Build.props
+      1 <Project>
+      2   <PropertyGroup>
+      3     <TargetFramework>net9.0</TargetFramework>
+      4     <Nullable>enable</Nullable>
+      5     <ImplicitUsings>enable</ImplicitUsings>
+      6     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+      7   </PropertyGroup>
+      8 </Project>
+● Write(Directory.Packages.props)
+  ⎿  Wrote 17 lines to Directory.Packages.props
+       1 <Project>
+       2   <!-- Central package management. All Microsoft.* framework pac
+         kages are pinned to 9.0.x (never 10.x). -->
+       3   <PropertyGroup>
+       4     <ManagePackageVersionsCentrally>true</ManagePackageVersionsC
+         entrally>
+       5   </PropertyGroup>
+       6   <ItemGroup Label="API">
+       7     <PackageVersion Include="Microsoft.AspNetCore.OpenApi" Versi
+         on="9.0.11" />
+     … +10 lines (ctrl+o to expand)
+
+● Write(src\TaskManager.Api\TaskManager.Api.csproj)
+  ⎿  Added 2 lines, removed 4 lines
+       1  <Project Sdk="Microsoft.NET.Sdk.Web">
+       2 
+       3    <PropertyGroup>
+       4 -    <TargetFramework>net9.0</TargetFramework>                  
+       5 -    <Nullable>enable</Nullable>                                
+       6 -    <ImplicitUsings>enable</ImplicitUsings>                    
+       4 +    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+       5    </PropertyGroup>
+       6 
+       7    <ItemGroup>
+      10 -    <PackageReference Include="Microsoft.AspNetCore.OpenApi" Ve
+         -rsion="9.0.11" />                                              
+       8 +    <PackageReference Include="Microsoft.AspNetCore.OpenApi" />
+       9    </ItemGroup>
+      10 
+      11  </Project>
+
+● Write(tests\TaskManager.Tests\TaskManager.Tests.csproj)
+  ⎿  Added 5 lines, removed 7 lines
+       1  <Project Sdk="Microsoft.NET.Sdk">
+       2 
+       3    <PropertyGroup>
+       4 -    <TargetFramework>net9.0</TargetFramework>                  
+       5 -    <ImplicitUsings>enable</ImplicitUsings>                    
+       6 -    <Nullable>enable</Nullable>                                
+       4      <IsPackable>false</IsPackable>
+       5    </PropertyGroup>
+       6 
+       7    <ItemGroup>
+      11 -    <PackageReference Include="coverlet.collector" Version="6.0
+         -.2" />                                                         
+      12 -    <PackageReference Include="Microsoft.NET.Test.Sdk" Version=
+         -"17.12.0" />                                                   
+      13 -    <PackageReference Include="xunit" Version="2.9.2" />       
+      14 -    <PackageReference Include="xunit.runner.visualstudio" Versi
+         -on="2.8.2" />                                                  
+       8 +    <PackageReference Include="coverlet.collector" />          
+       9 +    <PackageReference Include="Microsoft.AspNetCore.Mvc.Testing
+         +" />                                                           
+      10 +    <PackageReference Include="Microsoft.NET.Test.Sdk" />      
+      11 +    <PackageReference Include="xunit" />                       
+      12 +    <PackageReference Include="xunit.runner.visualstudio" />   
+      13    </ItemGroup>
+      14 
+      15    <ItemGroup>
+
+● Write(src\TaskManager.Api\Domain\NotFoundException.cs)
+  ⎿  Wrote 24 lines to src\TaskManager.Api\Domain\NotFoundException.cs
+       1 namespace TaskManager.Api.Domain;
+       2 
+       3 /// <summary>
+       4 /// Thrown by services when a requested resource does not exist 
+         (or is soft-deleted).
+       5 /// Mapped to HTTP 404 by <see cref="Infrastructure.GlobalExcept
+         ionHandler"/>.
+       6 /// </summary>
+       7 public sealed class NotFoundException : Exception
+       8 {
+     … +16 lines (ctrl+o to expand)
+
+● Write(src\TaskManager.Api\Infrastructure\ProblemDetailsEnricher.cs)
+  ⎿  Wrote 28 lines to
+     src\TaskManager.Api\Infrastructure\ProblemDetailsEnricher.cs
+       1 using System.Diagnostics;
+       2 using Microsoft.AspNetCore.Mvc;
+       3 
+       4 namespace TaskManager.Api.Infrastructure;
+       5 
+       6 /// <summary>
+       7 /// Adds the fields every error response must carry (<c>traceId<
+         /c>, <c>instance</c>) so all
+       8 /// ProblemDetails, whether from validation, exceptions or statu
+         s codes, have the same shape.
+     … +20 lines (ctrl+o to expand)
+
+● Write(src\TaskManager.Api\Infrastructure\GlobalExceptionHandler.cs)
+  ⎿  Wrote 92 lines to
+     src\TaskManager.Api\Infrastructure\GlobalExceptionHandler.cs
+       1 using Microsoft.AspNetCore.Diagnostics;
+       2 using Microsoft.AspNetCore.Mvc;
+       3 using TaskManager.Api.Domain;
+       4 
+       5 namespace TaskManager.Api.Infrastructure;
+       6 
+       7 /// <summary>
+       8 /// Converts every unhandled exception into an RFC 7807 ProblemD
+         etails response.
+       9 /// Known exceptions map to specific 4xx codes; anything else be
+     … +84 lines (~3 KB) (ctrl+o to expand)
+
+● Write(src\TaskManager.Api\Infrastructure\CorsSettings.cs)
+  ⎿  Wrote 17 lines to src\TaskManager.Api\Infrastructure\CorsSettings.cs
+       1 namespace TaskManager.Api.Infrastructure;
+       2 
+       3 /// <summary>CORS configuration bound from the <c>Cors</c> confi
+         guration section.</summary>
+       4 public sealed class CorsSettings
+       5 {
+       6     /// <summary>Configuration section name.</summary>
+       7     public const string SectionName = "Cors";
+       8 
+       9     /// <summary>Name of the CORS policy used by the UI.</summar
+     … +9 lines (ctrl+o to expand)
+
+● Write(src\TaskManager.Api\Infrastructure\CorsSettingsValidator.cs)
+  ⎿  Wrote 45 lines to
+     src\TaskManager.Api\Infrastructure\CorsSettingsValidator.cs
+       1 using Microsoft.Extensions.Options;
+       2 
+       3 namespace TaskManager.Api.Infrastructure;
+       4 
+       5 /// <summary>
+       6 /// Validates <see cref="CorsSettings"/> at startup: every origi
+         n must be an exact http(s) origin,
+       7 /// wildcards are rejected, and outside Development at least one
+          origin is required.
+       8 /// </summary>
+     … +37 lines (ctrl+o to expand)
+
+● Write(src\TaskManager.Api\Infrastructure\ConfigureCorsOptions.cs)
+  ⎿  Wrote 26 lines to
+     src\TaskManager.Api\Infrastructure\ConfigureCorsOptions.cs
+       1 using Microsoft.AspNetCore.Cors.Infrastructure;
+       2 using Microsoft.Extensions.Options;
+       3 
+       4 namespace TaskManager.Api.Infrastructure;
+       5 
+       6 /// <summary>
+       7 /// Builds the UI CORS policy from validated <see cref="CorsSett
+         ings"/>. Resolved lazily so the
+       8 /// policy always reflects final configuration (including test o
+         verrides).
+     … +18 lines (ctrl+o to expand)
+
+● Write(src\TaskManager.Api\Infrastructure\ServiceCollectionExtensions.cs)
+  ⎿  Wrote 51 lines to
+     src\TaskManager.Api\Infrastructure\ServiceCollectionExtensions.cs
+       1 using Microsoft.AspNetCore.Cors.Infrastructure;
+       2 using Microsoft.AspNetCore.HttpLogging;
+       3 using Microsoft.Extensions.Options;
+       4 
+       5 namespace TaskManager.Api.Infrastructure;
+       6 
+       7 /// <summary>Registration helpers for cross-cutting concerns.</s
+         ummary>
+       8 public static class ServiceCollectionExtensions
+       9 {
+     … +42 lines (ctrl+o to expand)
+
+● Write(src\TaskManager.Api\Program.cs)
+  ⎿  Added 30 lines, removed 9 lines
+       1 +using System.Text.Json.Serialization;                          
+       2 +using TaskManager.Api.Infrastructure;                          
+       3 +                                                               
+       4  var builder = WebApplication.CreateBuilder(args);
+       5 
+       3 -// Add services to the container.                              
+       4 -                                                               
+       5 -builder.Services.AddControllers();                             
+       6 -// Learn more about configuring OpenAPI at https://aka.ms/aspne
+         -t/openapi                                                      
+       6 +builder.Services                                               
+       7 +    .AddControllers()                                          
+       8 +    .AddJsonOptions(options => options.JsonSerializerOptions.Co
+         +nverters.Add(new JsonStringEnumConverter()));                  
+       9  builder.Services.AddOpenApi();
+      10 +builder.Services.AddHealthChecks();                            
+      11 +builder.Services.AddApiProblemDetails();                       
+      12 +builder.Services.AddUiCors();                                  
+      13 +builder.Services.AddRequestLogging();                          
+      14 
+      15  var app = builder.Build();
+      16 
+      11 -// Configure the HTTP request pipeline.                        
+      17 +// Outermost: log every request with its final status code (inc
+         +luding handled 500s).                                          
+      18 +app.UseHttpLogging();                                          
+      19 +                                                               
+      20 +// Before the exception handler so CORS headers are also presen
+         +t on error responses,                                          
+      21 +// letting the browser UI read the ProblemDetails body.        
+      22 +app.UseCors(CorsSettings.PolicyName);                          
+      23 +                                                               
+      24 +app.UseExceptionHandler();                                     
+      25 +app.UseStatusCodePages();                                      
+      26 +                                                               
+      27 +if (!app.Environment.IsDevelopment())                          
+      28 +{                                                              
+      29 +    app.UseHsts();                                             
+      30 +    app.UseHttpsRedirection();                                 
+      31 +}                                                              
+      32 +                                                               
+      33  if (app.Environment.IsDevelopment())
+      34  {
+      35      app.MapOpenApi();
+      36  }
+      37 
+      17 -app.UseHttpsRedirection();                                     
+      18 -                                                               
+      19 -app.UseAuthorization();                                        
+      20 -                                                               
+      38 +app.MapHealthChecks("/health");                                
+      39  app.MapControllers();
+      40 
+      41  app.Run();
+      42 +                                                               
+      43 +/// <summary>Application entry point. Declared partial so integ
+         +ration tests can use it with WebApplicationFactory.</summary>  
+      44 +public partial class Program;                                  
+
+● Write(src\TaskManager.Api\appsettings.json)
+  ⎿  Added 7 lines, removed 2 lines
+       2    "Logging": {
+       3      "LogLevel": {
+       4        "Default": "Information",
+       5 -      "Microsoft.AspNetCore": "Warning"                        
+       5 +      "Microsoft.AspNetCore": "Warning",                       
+       6 +      "Microsoft.AspNetCore.HttpLogging.HttpLoggingMiddleware":
+         + "Information",                                                
+       7 +      "Microsoft.AspNetCore.Diagnostics.ExceptionHandlerMiddlew
+         +are": "None"                                                   
+       8      }
+       9    },
+       8 -  "AllowedHosts": "*"                                          
+      10 +  "AllowedHosts": "*",                                         
+      11 +  "Cors": {                                                    
+      12 +    "AllowedOrigins": []                                       
+      13 +  }                                                            
+      14  }
+
+● Write(src\TaskManager.Api\appsettings.Development.json)
+  ⎿  Added 6 lines, removed 1 line
+       2    "Logging": {
+       3      "LogLevel": {
+       4        "Default": "Information",
+       5 -      "Microsoft.AspNetCore": "Warning"                        
+       5 +      "Microsoft.AspNetCore": "Warning",                       
+       6 +      "Microsoft.AspNetCore.HttpLogging.HttpLoggingMiddleware":
+         + "Information",                                                
+       7 +      "Microsoft.AspNetCore.Diagnostics.ExceptionHandlerMiddlew
+         +are": "None"                                                   
+       8      }
+       9 +  },                                                           
+      10 +  "Cors": {                                                    
+      11 +    "AllowedOrigins": [ "http://localhost:5173" ]              
+      12    }
+      13  }
+
+● Write(src\TaskManager.Api\TaskManager.Api.http)
+  ⎿  Added 15 lines, removed 3 lines
+       1 -@TaskManager.Api_HostAddress = http://localhost:5157           
+       1 +@host = http://localhost:5157                                  
+       2 
+       3 -GET {{TaskManager.Api_HostAddress}}/weatherforecast/           
+       3 +### Health check (expect 200 "Healthy")                        
+       4 +GET {{host}}/health                                            
+       5 +                                                               
+       6 +### Unknown route (expect 404 application/problem+json with tra
+         +ceId)                                                          
+       7 +GET {{host}}/nope                                              
+       8  Accept: application/json
+       9 
+       6 -###                                                            
+      10 +### CORS preflight from the UI origin (expect Access-Control-Al
+         +low-Origin: http://localhost:5173)                             
+      11 +OPTIONS {{host}}/health                                        
+      12 +Origin: http://localhost:5173                                  
+      13 +Access-Control-Request-Method: GET                             
+      14 +                                                               
+      15 +### CORS preflight from an unknown origin (expect NO Access-Con
+         +trol-Allow-Origin header)                                      
+      16 +OPTIONS {{host}}/health                                        
+      17 +Origin: http://evil.test                                       
+      18 +Access-Control-Request-Method: GET                             
+
+● Now the tests.
+
+● Write(tests\TaskManager.Tests\Integration\TaskManagerApiFactory.cs)
+  ⎿  Wrote 31 lines to
+     tests\TaskManager.Tests\Integration\TaskManagerApiFactory.cs
+       1 using Microsoft.AspNetCore.Hosting;
+       2 using Microsoft.AspNetCore.Mvc.Testing;
+       3 using Microsoft.AspNetCore.TestHost;
+       4 using Microsoft.Extensions.Configuration;
+       5 using Microsoft.Extensions.DependencyInjection;
+       6 using TaskManager.Tests.Integration.TestSupport;
+       7 
+       8 namespace TaskManager.Tests.Integration;
+       9 
+      10 /// <summary>
+     … +21 lines (ctrl+o to expand)
+
+● Write(tests\TaskManager.Tests\Integration\TestSupport\TestErrorsController.cs)
+  ⎿  Wrote 21 lines to tests\TaskManager.Tests\Integration\TestSupport\Test
+     ErrorsController.cs
+       1 using Microsoft.AspNetCore.Mvc;
+       2 using TaskManager.Api.Domain;
+       3 
+       4 namespace TaskManager.Tests.Integration.TestSupport;
+       5 
+       6 /// <summary>
+       7 /// Test-only endpoints that throw, registered only by <see cref
+         ="TaskManagerApiFactory"/>.
+       8 /// Never part of the real API.
+       9 /// </summary>
+     … +12 lines (ctrl+o to expand)
+
+● Write(tests\TaskManager.Tests\Integration\HealthEndpointTests.cs)
+  ⎿  Wrote 17 lines to
+     tests\TaskManager.Tests\Integration\HealthEndpointTests.cs
+       1 using System.Net;
+       2 
+       3 namespace TaskManager.Tests.Integration;
+       4 
+       5 public sealed class HealthEndpointTests(TaskManagerApiFactory fa
+         ctory) : IClassFixture<TaskManagerApiFactory>
+       6 {
+       7     [Fact]
+       8     public async Task Get_Health_Returns200Healthy()
+       9     {
+     … +8 lines (ctrl+o to expand)
+
+● Write(tests\TaskManager.Tests\Integration\HealthEndpointTests.cs)
+  ⎿  Added 2 lines, removed 2 lines
+       9      {
+      10          var client = factory.CreateClient();
+      11 
+      12 -        var response = await client.GetAsync("/health", TestCon
+         -text.Current.CancellationToken);                               
+      12 +        var response = await client.GetAsync("/health");       
+      13 
+      14          Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+      15 -        Assert.Equal("Healthy", await response.Content.ReadAsSt
+         -ringAsync(TestContext.Current.CancellationToken));             
+      15 +        Assert.Equal("Healthy", await response.Content.ReadAsSt
+         +ringAsync());                                                  
+      16      }
+      17  }
+
+● Write(tests\TaskManager.Tests\Integration\ErrorHandlingTests.cs)
+  ⎿  Wrote 93 lines to
+     tests\TaskManager.Tests\Integration\ErrorHandlingTests.cs
+      1 using System.Net;
+      2 using System.Text.Json;
+      3 using TaskManager.Tests.Integration.TestSupport;
+      4 
+      5 namespace TaskManager.Tests.Integration;
+      6 
+      7 public sealed class ErrorHandlingTests(TaskManagerApiFactory fact
+        ory) : IClassFixture<TaskManagerApiFactory>
+      8 {
+      9     private const string ProblemJson = "application/problem+json"
+     … +85 lines (~3 KB) (ctrl+o to expand)
+
+● Write(tests\TaskManager.Tests\Integration\CorsTests.cs)  ⎿  Wrote 61 lines to tests\TaskManager.Tests\Integration\CorsTests.cs
+       1 using System.Net;
+       2 
+       3 namespace TaskManager.Tests.Integration;
+       4 
+       5 public sealed class CorsTests(TaskManagerApiFactory factory) : I
+         ClassFixture<TaskManagerApiFactory>
+       6 {
+       7     private const string AllowOriginHeader = "Access-Control-All
+         ow-Origin";
+       8 
+     … +53 lines (ctrl+o to expand)
+
+● Write(tests\TaskManager.Tests\Integration\StartupValidationTests.cs)
+  ⎿  Wrote 34 lines to
+     tests\TaskManager.Tests\Integration\StartupValidationTests.cs
+       1 using Microsoft.AspNetCore.Hosting;
+       2 using Microsoft.AspNetCore.Mvc.Testing;
+       3 using Microsoft.Extensions.Configuration;
+       4 
+       5 namespace TaskManager.Tests.Integration;
+       6 
+       7 public sealed class StartupValidationTests
+       8 {
+       9     [Fact]
+      10     public async Task Startup_InProductionWithoutCorsOrigins_Fai
+     … +25 lines (~1 KB) (ctrl+o to expand)
+
+● Write(tests\TaskManager.Tests\Unit\CorsSettingsValidatorTests.cs)
+  ⎿  Wrote 62 lines to
+     tests\TaskManager.Tests\Unit\CorsSettingsValidatorTests.cs
+       1 using Microsoft.Extensions.FileProviders;
+       2 using Microsoft.Extensions.Hosting;
+       3 using TaskManager.Api.Infrastructure;
+       4 
+       5 namespace TaskManager.Tests.Unit;
+       6 
+       7 public sealed class CorsSettingsValidatorTests
+       8 {
+       9     [Fact]
+      10     public void Validate_EmptyOriginsInDevelopment_Succeeds()
+     … +52 lines (ctrl+o to expand)
+
+  Ran 1 shell command · 1 failed (ctrl+o to expand)
+
+● ASP.NET Core omits disallowed headers from Access-Control-Allow-Headers rather
+  than echoing them, so the browser blocks them. I'm rewriting the test to
+  check for that. · summary
+
+● Update(tests\TaskManager.Tests\Integration\CorsTests.cs)
+  ⎿  Added 15 lines, removed 2 lines
+      25      }
+      26 
+      27      [Fact]
+      28 -    public async Task Preflight_WithDisallowedHeader_HasNoAllow
+         -OriginHeader()                                                 
+      28 +    public async Task Preflight_WithDisallowedHeader_DoesNotAll
+         +owThatHeader()                                                 
+      29      {
+      30 +        // ASP.NET Core still echoes the origin, but omits the 
+         +header from Allow-Headers;                                     
+      31 +        // the browser then blocks the actual request.         
+      32          var response = await SendPreflightAsync(TaskManagerApiF
+          actory.AllowedOrigin, "GET", requestHeaders: "Authorization");
+      33 
+      32 -        Assert.False(response.Headers.Contains(AllowOriginHeade
+         -r));                                                           
+      34 +        var allowedHeaders = response.Headers.TryGetValues("Acc
+         +ess-Control-Allow-Headers", out var values)                    
+      35 +            ? string.Join(',', values)                         
+      36 +            : string.Empty;                                    
+      37 +        Assert.DoesNotContain("Authorization", allowedHeaders, 
+         +StringComparison.OrdinalIgnoreCase);                           
+      38      }
+      39 
+      40      [Fact]
+      41 +    public async Task Preflight_WithAllowedContentTypeHeader_Al
+         +lowsIt()                                                       
+      42 +    {                                                          
+      43 +        var response = await SendPreflightAsync(TaskManagerApiF
+         +actory.AllowedOrigin, "POST", requestHeaders: "Content-Type"); 
+      44 +                                                               
+      45 +        Assert.Contains("Content-Type", string.Join(',', respon
+         +se.Headers.GetValues("Access-Control-Allow-Headers")), StringCo
+         +mparison.OrdinalIgnoreCase);                                   
+      46 +    }                                                          
+      47 +                                                               
+      48 +    [Fact]                                                     
+      49      public async Task SimpleRequest_FromAllowedOrigin_IncludesA
+          llowOriginHeader()
+      50      {
+      51          var client = factory.CreateClient();
+
+  Ran 1 shell command (ctrl+o to expand)
+
+● All 25 tests pass. Next I'll run the real app once to confirm the verification
+  commands I'm about to give you actually work.
+
+  Ran 2 shell commands (ctrl+o to expand)
+
+● Stop Task
+  ⎿  dotnet run --project src/TaskManager.Api --launch-profile http
+     --no-build · stopped
+
+● Last piece is the README. After that I'll check git status.
+
+● Write(README.md)
+  ⎿  Wrote 61 lines to README.md
+       1 # Task Manager
+       2 
+       3 A small task management app: a .NET 9 Web API (EF Core Code Firs
+         t, SQL Server) and a React + Vite UI.
+       4 
+       5 > Status: **step 1 of 11**: solution scaffold and cross-cutting
+         concerns (error handling, logging, CORS).
+       6 > Task endpoints, the database and the UI come in later steps.
+       7 
+       8 ## Prerequisites
+     … +53 lines (ctrl+o to expand)
+
+  Ran 1 shell command (ctrl+o to expand)
+
+● Step 1 (scaffold plus cross-cutting concerns) is done and dotnet test passes
+  all 25 tests. I haven't committed anything or started step 2. I also ran the
+  real API once and checked the health endpoint, an unknown route and both
+  preflights; all four behaved as expected.
+
+  How to verify
+
+  dotnet build
+  dotnet test
+  dotnet run --project src/TaskManager.Api --launch-profile http
+
+  Then, in a second terminal (use curl.exe so PowerShell's curl alias doesn't
+  get in the way):
+
+  # Health check: expect 200 and "Healthy"
+  curl.exe -i http://localhost:5157/health
+
+  # Unknown route: expect 404, Content-Type application/problem+json, with 
+  instance and traceId
+  curl.exe -i http://localhost:5157/nope
+
+  # Preflight from the UI origin: expect 204 with
+  #   Access-Control-Allow-Origin: http://localhost:5173
+  #   Access-Control-Allow-Methods: GET,POST,PUT,PATCH,DELETE
+  #   Access-Control-Allow-Headers: Content-Type
+  curl.exe -i -X OPTIONS http://localhost:5157/health -H "Origin: 
+  http://localhost:5173" -H "Access-Control-Request-Method: GET"
+
+  # Preflight from an unknown origin: expect 204 with NO Access-Control-* 
+  headers
+  curl.exe -i -X OPTIONS http://localhost:5157/health -H "Origin: 
+  http://evil.test" -H "Access-Control-Request-Method: GET"
+
+  The same four requests are in src/TaskManager.Api/TaskManager.Api.http. To see
+  the fail-fast check, run $env:ASPNETCORE_ENVIRONMENT="Production"; dotnet run
+  --project src/TaskManager.Api --no-launch-profile. Startup should stop
+  because Cors:AllowedOrigins is empty.
+
+  Things you should know
+
+  - Disallowed request headers: ASP.NET Core still sends
+    Access-Control-Allow-Origin when a preflight asks for a header we don't
+    allow, such as Authorization. It just leaves that header out of
+    Access-Control-Allow-Headers, and the browser blocks the request. My first
+    test expected no origin header at all and failed, so I changed it to check
+    this actual behaviour.
+  - Middleware order: CORS runs before the exception handler so that 500
+    responses also carry the CORS header. Without it the UI couldn't read the
+    error body. There's a test for this.
+  - Logging: I set the framework's ExceptionHandlerMiddleware log level to None.
+    It would otherwise log every exception a second time, including 404s, at
+    Error level. GlobalExceptionHandler does the logging with the traceId.
+  - Test-only endpoint: TestErrorsController exists only in the test project.
+    The test factory registers it, so it never ships in the API.
+  - Version exception: Microsoft.NET.Test.Sdk is 17.12.0. It's versioned
+    separately from .NET and has no 9.0.x line. Everything else from Microsoft
+    is pinned to 9.0.11.
+  - Not in this step: the 409 mapping for EF's concurrency exception and the
+    connection-string check both need EF, so they come in step 2.
+  - Promp.txt: this file is in the repo root and untracked, but I didn't create
+    it. Leave it out of the commit if it isn't meant to be there.
+
+  Files to review
+
+  Root: global.json, Directory.Build.props, Directory.Packages.props,
+  TaskManager.sln, README.md
+
+  API (src/TaskManager.Api/):
+  - TaskManager.Api.csproj
+  - Program.cs
+  - appsettings.json
+  - appsettings.Development.json
+  - TaskManager.Api.http
+  - Properties/launchSettings.json (template default, unchanged)
+  - Domain/NotFoundException.cs
+  - Infrastructure/GlobalExceptionHandler.cs
+  - Infrastructure/ProblemDetailsEnricher.cs
+  - Infrastructure/CorsSettings.cs
+  - Infrastructure/CorsSettingsValidator.cs
+  - Infrastructure/ConfigureCorsOptions.cs
+  - Infrastructure/ServiceCollectionExtensions.cs
+
+  Tests (tests/TaskManager.Tests/):
+  - TaskManager.Tests.csproj
+  - Integration/TaskManagerApiFactory.cs
+  - Integration/TestSupport/TestErrorsController.cs
+  - Integration/HealthEndpointTests.cs
+  - Integration/ErrorHandlingTests.cs: 500 with no leaked message or stack
+    trace, 404 from the exception, unknown route 404, 405, CORS header on errors
+  - Integration/CorsTests.cs: allowed and unknown origins, allowed and
+    disallowed headers, simple request
+  - Integration/StartupValidationTests.cs: Production with no origins fails to
+    start, wildcard origin fails to start
+  - Unit/CorsSettingsValidatorTests.cs
+
+✻ Cogitated for 4m 44s · done 2:29 PM
+
+※ recap: We're building the .NET 9 and React task manager, and step 1 (scaffold, error handling, logging, CORS) is done with all 25 tests passing and nothing committed. Next, review the files and run the verification commands, then commit and approve step 2. (turn off recaps in /config)
