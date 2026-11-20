@@ -3,9 +3,13 @@ import './TaskList.css';
 
 /**
  * Task table on wide screens; each row stacks into a card below 640px (CSS only).
- * @param {{ tasks: import('../api/tasksApi.js').Task[], busy: boolean }} props
+ * @param {{
+ *   tasks: import('../api/tasksApi.js').Task[],
+ *   busy: boolean,
+ *   onEdit: (task: import('../api/tasksApi.js').Task) => void,
+ * }} props
  */
-export default function TaskList({ tasks, busy }) {
+export default function TaskList({ tasks, busy, onEdit }) {
   return (
     <div className={`task-list${busy ? ' task-list--busy' : ''}`} aria-busy={busy}>
       <table className="task-table">
@@ -17,11 +21,14 @@ export default function TaskList({ tasks, busy }) {
             <th scope="col">Priority</th>
             <th scope="col">Assigned to</th>
             <th scope="col">Last updated</th>
+            <th scope="col">
+              <span className="visually-hidden">Actions</span>
+            </th>
           </tr>
         </thead>
         <tbody>
           {tasks.map((task) => (
-            <TaskRow key={task.id} task={task} />
+            <TaskRow key={task.id} task={task} onEdit={onEdit} />
           ))}
         </tbody>
       </table>

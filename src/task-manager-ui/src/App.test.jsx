@@ -5,7 +5,7 @@ import App from './App.jsx';
 import { ApiError } from './api/ApiError.js';
 import { listTasks } from './api/tasksApi.js';
 
-vi.mock('./api/tasksApi.js', () => ({ listTasks: vi.fn() }));
+vi.mock('./api/tasksApi.js', () => ({ listTasks: vi.fn(), getTask: vi.fn(), createTask: vi.fn(), updateTask: vi.fn() }));
 
 const task = (overrides) => ({
   id: 1,

@@ -2,8 +2,8 @@
 
 A small task management app: a .NET 9 Web API (EF Core Code First, SQL Server) and a React + Vite UI.
 
-> Status: **step 9 of 11**: the API is complete. The UI has its scaffold, API layer, and a task list with status
-> and priority filters. Detail, create/edit, delete and summary screens come in the next steps.
+> Status: **step 10 of 11**: the API is complete. The UI has the task list with filters plus a create/edit form.
+> Delete, the status dropdown and the summary view come in the last step.
 
 ## Running the UI against the API
 Use two terminals:
@@ -36,6 +36,19 @@ src/task-manager-ui/src/
   blocked by CORS) or `config`.
 - **Priority** is shown with colour plus an icon and a text label (▲▲ Critical, ▲ High, ● Medium, ▼ Low), so it
   never relies on colour alone.
+- **Create and edit** use one `TaskForm` inside an accessible `Modal`:
+  - focus moves into the dialog, Tab is trapped, and Escape closes it, returning focus to the button that opened it
+  - the rest of the page is `inert` while the dialog is open
+  - edit loads the task fresh with `getTask`, so the rowVersion is current
+  - the form mirrors the API's rules (`src/validation/taskForm.js`, `src/constants/taskRules.js`), but the server
+    is the source of truth: its 400 field errors appear next to the matching fields, and anything else goes in a
+    form-level alert
+  - edits are sent as a full PUT, so every field plus `rowVersion` is included, and an emptied description or
+    assignee is sent as `null`
+  - on **409** the user's values stay in the form. "Load latest version" shows the other person's changes and
+    lists "Your unsaved edits" so nothing is lost.
+  - Save is disabled while a request is in flight, so a double submit is impossible
+  - after a save, the cached row is replaced (including the new rowVersion) and the list reloads
 - **Versions** are pinned exactly (`.npmrc` has `save-exact=true`, and `package-lock.json` is committed), using
   releases that were at least two weeks old when added.
 

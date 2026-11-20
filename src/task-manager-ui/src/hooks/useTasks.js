@@ -13,7 +13,8 @@ import { listTasks } from '../api/tasksApi.js';
  *   loaded: boolean,
  *   error: import('../api/ApiError.js').ApiError | null,
  *   reload: () => void,
- * }}
+ *   replaceTask: (task: import('../api/tasksApi.js').Task) => void,
+ * }} `replaceTask` swaps in a saved task (with its new rowVersion) immediately, before a reload finishes.
  */
 export function useTasks(filters) {
   const { status = '', priority = '' } = filters;
@@ -43,5 +44,12 @@ export function useTasks(filters) {
 
   const reload = useCallback(() => setReloadToken((token) => token + 1), []);
 
-  return { ...state, reload };
+  const replaceTask = useCallback((task) => {
+    setState((previous) => ({
+      ...previous,
+      tasks: previous.tasks.map((existing) => (existing.id === task.id ? task : existing)),
+    }));
+  }, []);
+
+  return { ...state, reload, replaceTask };
 }

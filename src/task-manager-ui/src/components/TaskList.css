@@ -63,6 +63,11 @@
   font-style: italic;
 }
 
+.task-row__actions {
+  text-align: right;
+  white-space: nowrap;
+}
+
 .task-row__date {
   color: var(--color-text-muted);
   font-size: 0.875rem;

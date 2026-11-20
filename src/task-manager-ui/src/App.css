@@ -41,10 +41,17 @@
 
 .panel__header {
   display: flex;
-  align-items: baseline;
+  align-items: center;
   justify-content: space-between;
+  flex-wrap: wrap;
   gap: var(--space-3);
   margin-bottom: var(--space-4);
+}
+
+.panel__heading {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-3);
 }
 
 .panel__title {
