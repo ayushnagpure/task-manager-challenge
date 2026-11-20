@@ -2,8 +2,8 @@
 
 A small task management app: a .NET 9 Web API (EF Core Code First, SQL Server) and a React + Vite UI.
 
-> Status: **step 6 of 11**: scaffold, cross-cutting concerns, data model, seed data, and the list, get, create,
-> update (PUT) and change-status (PATCH) endpoints. Delete, summary and the UI come in later steps.
+> Status: **step 7 of 11**: scaffold, cross-cutting concerns, data model, seed data, and the list, get, create,
+> update (PUT), change-status (PATCH) and soft-delete endpoints. The summary and the UI come in later steps.
 
 ## Prerequisites
 - .NET SDK 9.0.x (`global.json` pins to the 9.0 line and rolls forward to the latest installed 9.0 feature band)
@@ -74,6 +74,7 @@ $env:TASKMANAGER_TEST_CONNECTION = "Server=MYPC\SQLEXPRESS;Database=TaskManagerD
 | GET | `/api/tasks/{id}` | 200 + task | 404 unknown, soft-deleted, or invalid id (0, negative, non-numeric) |
 | PUT | `/api/tasks/{id}` | 200 + updated task (new `rowVersion`) | 400 validation / bad rowVersion, 404, **409 stale rowVersion** |
 | PATCH | `/api/tasks/{id}/status` | 200 + task (new `rowVersion`) | 400 invalid status, 404 |
+| DELETE | `/api/tasks/{id}` | 204, no body | 404 unknown, already deleted, or invalid id |
 | GET | `/health` | 200 "Healthy" | |
 | GET | `/openapi/v1.json` | OpenAPI document (Development only) | |
 
@@ -125,7 +126,12 @@ A soft-deleted task is indistinguishable from one that never existed: both retur
 - Last write wins, so no `rowVersion` is needed. Setting the status the task already has changes nothing.
 - The response carries the task's **new** `rowVersion`. Clients must keep it, because a later PUT with the old one gets 409.
 
-**Dates:** `modifiedDate` is set to the current UTC time on every write. `createdDate` never changes.
+**Delete (DELETE `/api/tasks/{id}`)**: a soft delete. The row is kept with `IsDeleted = 1` and from then on is
+hidden from every endpoint (GET, list, PUT, PATCH, summary). Deleting again returns 404. Last write wins, so no
+`rowVersion` is needed. There is no `DeletedDate` column: `modifiedDate` records the deletion time, because a
+deleted task can't be edited afterwards. To restore a task, set `IsDeleted = 0` in the database.
+
+**Dates:** `modifiedDate` is set to the current UTC time on every write (including delete). `createdDate` never changes.
 
 ## Error responses
 Every error is an RFC 7807 `application/problem+json` body with the same shape:

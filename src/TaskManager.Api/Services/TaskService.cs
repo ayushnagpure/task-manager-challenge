@@ -117,6 +117,22 @@ public sealed class TaskService : ITaskService
     }
 
     /// <inheritdoc />
+    public async Task DeleteAsync(int id, CancellationToken cancellationToken)
+    {
+        // Unknown and already-deleted ids both fail here (global query filter), so a second delete is 404.
+        var task = await FindTrackedAsync(id, cancellationToken);
+
+        // Soft delete: the row stays; the global query filter hides it from every query from now on.
+        // ModifiedDate records when it was deleted (a deleted task can't be edited afterwards).
+        task.IsDeleted = true;
+        task.ModifiedDate = _timeProvider.GetUtcNow();
+
+        await _db.SaveChangesAsync(cancellationToken);
+
+        _logger.LogInformation("Soft-deleted task {TaskId}", task.Id);
+    }
+
+    /// <inheritdoc />
     public async Task<TaskResponse> GetByIdAsync(int id, CancellationToken cancellationToken)
     {
         var task = await _db.Tasks.AsNoTracking().FirstOrDefaultAsync(t => t.Id == id, cancellationToken)

@@ -43,6 +43,15 @@ public interface ITaskService
     /// <exception cref="Domain.NotFoundException">No task with that id exists, or it is soft-deleted.</exception>
     Task<TaskResponse> UpdateStatusAsync(int id, UpdateTaskStatusRequest request, CancellationToken cancellationToken);
 
+    /// <summary>
+    /// Soft-deletes a task: sets <c>IsDeleted</c> and <c>ModifiedDate</c>; the row is never removed.
+    /// Last write wins (no rowVersion needed).
+    /// </summary>
+    /// <param name="id">The task id.</param>
+    /// <param name="cancellationToken">Cancels the operation.</param>
+    /// <exception cref="Domain.NotFoundException">No task with that id exists, or it is already deleted.</exception>
+    Task DeleteAsync(int id, CancellationToken cancellationToken);
+
     /// <summary>Gets a task by id.</summary>
     /// <param name="id">The task id.</param>
     /// <param name="cancellationToken">Cancels the operation.</param>

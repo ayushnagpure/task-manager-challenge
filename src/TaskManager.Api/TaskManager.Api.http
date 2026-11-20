@@ -171,6 +171,33 @@ Content-Type: application/json
 
 { "status": "Done" }
 
+############ Tasks: soft delete ############
+# Run in order. Task 5 is a seeded active task.
+
+### Delete task 5 (expect 204 No Content, empty body)
+DELETE {{host}}/api/tasks/5
+
+### Get it (expect 404, same shape as an unknown id)
+GET {{host}}/api/tasks/5
+
+### Delete it again (expect 404)
+DELETE {{host}}/api/tasks/5
+
+### List (expect 11 tasks, id 5 no longer present)
+GET {{host}}/api/tasks
+
+### Status change on the deleted task (expect 404)
+PATCH {{host}}/api/tasks/5/status
+Content-Type: application/json
+
+{ "status": "Done" }
+
+### Unknown id (expect 404 "Task with id '999999' was not found.")
+DELETE {{host}}/api/tasks/999999
+
+### id = 0 (expect 404 ProblemDetails)
+DELETE {{host}}/api/tasks/0
+
 ############ Tasks: get by id ############
 
 ### Seeded active task (expect 200)

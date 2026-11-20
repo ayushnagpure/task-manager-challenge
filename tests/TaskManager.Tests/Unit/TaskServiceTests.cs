@@ -273,6 +273,79 @@ public sealed class TaskServiceTests : IDisposable
             CreateService().UpdateStatusAsync(22, new UpdateTaskStatusRequest { Status = "Done" }, CancellationToken.None));
     }
 
+    // ---------- DeleteAsync (soft delete) ----------
+
+    [Fact]
+    public async Task DeleteAsync_SetsIsDeleted_AndModifiedDateToNow_KeepsCreatedDate()
+    {
+        await SeedAsync(new TaskItem
+        {
+            Id = 30,
+            Title = "Delete me",
+            Description = "Kept",
+            AssignedTo = "Eve",
+            Status = TaskItemStatus.InProgress,
+            Priority = TaskPriority.High,
+            CreatedDate = Now,
+            ModifiedDate = Now,
+            RowVersion = StoredRowVersion,
+        });
+        _time.Advance(TimeSpan.FromHours(3));
+
+        await CreateService().DeleteAsync(30, CancellationToken.None);
+
+        _db.ChangeTracker.Clear();
+        var row = await _db.Tasks.IgnoreQueryFilters().SingleAsync(t => t.Id == 30);
+        Assert.True(row.IsDeleted);
+        Assert.Equal(Now.AddHours(3), row.ModifiedDate);
+        Assert.Equal(Now, row.CreatedDate);
+        Assert.Equal("Delete me", row.Title);
+        Assert.Equal("Kept", row.Description);
+        Assert.Equal("Eve", row.AssignedTo);
+        Assert.Equal(TaskItemStatus.InProgress, row.Status);
+        Assert.Equal(TaskPriority.High, row.Priority);
+    }
+
+    [Fact]
+    public async Task DeleteAsync_ThenGetById_ThrowsNotFound()
+    {
+        await SeedAsync(new TaskItem
+        {
+            Id = 31,
+            Title = "Short-lived",
+            Priority = TaskPriority.Low,
+            CreatedDate = Now,
+            ModifiedDate = Now,
+            RowVersion = StoredRowVersion,
+        });
+
+        await CreateService().DeleteAsync(31, CancellationToken.None);
+
+        await Assert.ThrowsAsync<NotFoundException>(() => CreateService().GetByIdAsync(31, CancellationToken.None));
+    }
+
+    [Theory]
+    [InlineData(404, false)] // unknown id
+    [InlineData(32, true)]   // already deleted
+    public async Task DeleteAsync_UnknownOrAlreadyDeleted_ThrowsNotFound(int id, bool seedDeleted)
+    {
+        if (seedDeleted)
+        {
+            await SeedAsync(new TaskItem
+            {
+                Id = id,
+                Title = "Gone",
+                Priority = TaskPriority.Low,
+                CreatedDate = Now,
+                ModifiedDate = Now,
+                IsDeleted = true,
+                RowVersion = StoredRowVersion,
+            });
+        }
+
+        await Assert.ThrowsAsync<NotFoundException>(() => CreateService().DeleteAsync(id, CancellationToken.None));
+    }
+
     private async Task SeedAsync(TaskItem task)
     {
         _db.Tasks.Add(task);

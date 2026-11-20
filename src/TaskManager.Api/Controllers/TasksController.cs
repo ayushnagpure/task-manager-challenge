@@ -78,6 +78,23 @@ public sealed class TasksController : ControllerBase
     public async Task<ActionResult<TaskResponse>> UpdateStatus(int id, [FromBody] UpdateTaskStatusRequest request, CancellationToken cancellationToken) =>
         await _taskService.UpdateStatusAsync(id, request, cancellationToken);
 
+    /// <summary>
+    /// Soft-deletes a task. The row is kept with <c>IsDeleted = true</c> and disappears from every endpoint.
+    /// Last write wins: no rowVersion is needed.
+    /// </summary>
+    /// <param name="id">Task id (a positive integer).</param>
+    /// <param name="cancellationToken">Cancels the request.</param>
+    /// <response code="204">Deleted. No body.</response>
+    /// <response code="404">No such task, or it is already deleted.</response>
+    [HttpDelete("{id:int:min(1)}")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound, "application/problem+json")]
+    public async Task<IActionResult> Delete(int id, CancellationToken cancellationToken)
+    {
+        await _taskService.DeleteAsync(id, cancellationToken);
+        return NoContent();
+    }
+
     /// <summary>Gets a task by id. Soft-deleted tasks return 404.</summary>
     /// <param name="id">Task id (a positive integer).</param>
     /// <param name="cancellationToken">Cancels the request.</param>
