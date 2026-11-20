@@ -46,6 +46,8 @@ public sealed class TaskItemConfiguration : IEntityTypeConfiguration<TaskItem>
 
         builder.HasIndex(t => new { t.IsDeleted, t.Status, t.Priority })
             .HasDatabaseName("IX_Tasks_IsDeleted_Status_Priority");
+
+        builder.HasData(SeedData.Tasks);
     }
 
     // Values are compile-time enum names, never user input.

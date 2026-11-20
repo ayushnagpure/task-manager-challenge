@@ -2,8 +2,8 @@
 
 A small task management app: a .NET 9 Web API (EF Core Code First, SQL Server) and a React + Vite UI.
 
-> Status: **step 2 of 11**: scaffold, cross-cutting concerns and the data model (entity, DbContext,
-> initial migration). Task endpoints and the UI come in later steps.
+> Status: **step 3 of 11**: scaffold, cross-cutting concerns, data model and seed data.
+> Task endpoints and the UI come in later steps.
 
 ## Prerequisites
 - .NET SDK 9.0.x (`global.json` pins to the 9.0 line and rolls forward to the latest installed 9.0 feature band)
@@ -45,6 +45,16 @@ Table `dbo.Tasks` (entity `TaskItem`):
 
 Index `IX_Tasks_IsDeleted_Status_Priority` supports filtering and the summary query.
 Enums are stored as strings, so sorting by priority uses an explicit rank, never the column value.
+
+## Seed data
+The `SeedTasks` migration inserts 15 sample tasks (`src/TaskManager.Api/Data/SeedData.cs`, via `HasData`):
+- Ids 1–12 are active and cover every status × priority combination exactly once.
+- Ids 13–15 are soft-deleted, so they're hidden by the API and excluded from the summary.
+- AssignedTo varies across Alice, Bob, Chen, Dana and Eve, and some tasks are unassigned.
+
+Ids and dates are fixed literals, so the seed is identical everywhere. Because it is part of a migration,
+**it is applied to every database the migrations run against**. To change the seed, edit `SeedData.cs`
+and add a new migration. Never edit an applied migration.
 
 ## Tests
 Integration tests use a separate database, **`TaskManagerDb_Tests`** on `localhost\SQLEXPRESS` (Windows auth).

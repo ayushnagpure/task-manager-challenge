@@ -79,6 +79,197 @@ namespace TaskManager.Api.Data.Migrations
 
                             t.HasCheckConstraint("CK_Tasks_Status", "[Status] IN ('Todo', 'InProgress', 'Done')");
                         });
+
+                    b.HasData(
+                        new
+                        {
+                            Id = 1,
+                            AssignedTo = "Bob",
+                            CreatedDate = new DateTimeOffset(new DateTime(2026, 1, 2, 9, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
+                            Description = "Move 2025 project folders to cold storage.",
+                            IsDeleted = false,
+                            ModifiedDate = new DateTimeOffset(new DateTime(2026, 1, 2, 9, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
+                            Priority = "Low",
+                            RowVersion = new byte[0],
+                            Status = "Todo",
+                            Title = "Archive old project files"
+                        },
+                        new
+                        {
+                            Id = 2,
+                            AssignedTo = "Chen",
+                            CreatedDate = new DateTimeOffset(new DateTime(2026, 1, 3, 10, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
+                            Description = "Refresh the onboarding and on-call pages.",
+                            IsDeleted = false,
+                            ModifiedDate = new DateTimeOffset(new DateTime(2026, 1, 4, 11, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
+                            Priority = "Medium",
+                            RowVersion = new byte[0],
+                            Status = "Todo",
+                            Title = "Update team wiki"
+                        },
+                        new
+                        {
+                            Id = 3,
+                            AssignedTo = "Alice",
+                            CreatedDate = new DateTimeOffset(new DateTime(2026, 1, 4, 9, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
+                            Description = "Slides and a demo script for Friday's review.",
+                            IsDeleted = false,
+                            ModifiedDate = new DateTimeOffset(new DateTime(2026, 1, 4, 9, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
+                            Priority = "High",
+                            RowVersion = new byte[0],
+                            Status = "Todo",
+                            Title = "Prepare sprint demo"
+                        },
+                        new
+                        {
+                            Id = 4,
+                            AssignedTo = "Dana",
+                            CreatedDate = new DateTimeOffset(new DateTime(2026, 1, 5, 8, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
+                            Description = "Users intermittently get 500s on sign-in.",
+                            IsDeleted = false,
+                            ModifiedDate = new DateTimeOffset(new DateTime(2026, 1, 5, 8, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
+                            Priority = "Critical",
+                            RowVersion = new byte[0],
+                            Status = "Todo",
+                            Title = "Fix login outage"
+                        },
+                        new
+                        {
+                            Id = 5,
+                            CreatedDate = new DateTimeOffset(new DateTime(2026, 1, 6, 14, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
+                            IsDeleted = false,
+                            ModifiedDate = new DateTimeOffset(new DateTime(2026, 1, 7, 9, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
+                            Priority = "Low",
+                            RowVersion = new byte[0],
+                            Status = "InProgress",
+                            Title = "Tidy CSS variables"
+                        },
+                        new
+                        {
+                            Id = 6,
+                            AssignedTo = "Alice",
+                            CreatedDate = new DateTimeOffset(new DateTime(2026, 1, 7, 10, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
+                            Description = "Cover filtering, validation and error responses.",
+                            IsDeleted = false,
+                            ModifiedDate = new DateTimeOffset(new DateTime(2026, 1, 9, 16, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
+                            Priority = "Medium",
+                            RowVersion = new byte[0],
+                            Status = "InProgress",
+                            Title = "Write API integration tests"
+                        },
+                        new
+                        {
+                            Id = 7,
+                            AssignedTo = "Bob",
+                            CreatedDate = new DateTimeOffset(new DateTime(2026, 1, 8, 11, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
+                            Description = "Switch the build pipeline to the new runner pool.",
+                            IsDeleted = false,
+                            ModifiedDate = new DateTimeOffset(new DateTime(2026, 1, 10, 12, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
+                            Priority = "High",
+                            RowVersion = new byte[0],
+                            Status = "InProgress",
+                            Title = "Migrate CI to new runners"
+                        },
+                        new
+                        {
+                            Id = 8,
+                            AssignedTo = "Chen",
+                            CreatedDate = new DateTimeOffset(new DateTime(2026, 1, 9, 7, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
+                            Description = "Upgrade the affected dependency and redeploy.",
+                            IsDeleted = false,
+                            ModifiedDate = new DateTimeOffset(new DateTime(2026, 1, 9, 15, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
+                            Priority = "Critical",
+                            RowVersion = new byte[0],
+                            Status = "InProgress",
+                            Title = "Patch security vulnerability"
+                        },
+                        new
+                        {
+                            Id = 9,
+                            AssignedTo = "Dana",
+                            CreatedDate = new DateTimeOffset(new DateTime(2026, 1, 10, 9, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
+                            Description = "Align issue labels with the new triage process.",
+                            IsDeleted = false,
+                            ModifiedDate = new DateTimeOffset(new DateTime(2026, 1, 11, 10, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
+                            Priority = "Low",
+                            RowVersion = new byte[0],
+                            Status = "Done",
+                            Title = "Rename repository labels"
+                        },
+                        new
+                        {
+                            Id = 10,
+                            CreatedDate = new DateTimeOffset(new DateTime(2026, 1, 11, 13, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
+                            IsDeleted = false,
+                            ModifiedDate = new DateTimeOffset(new DateTime(2026, 1, 13, 17, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
+                            Priority = "Medium",
+                            RowVersion = new byte[0],
+                            Status = "Done",
+                            Title = "Draft onboarding guide"
+                        },
+                        new
+                        {
+                            Id = 11,
+                            AssignedTo = "Alice",
+                            CreatedDate = new DateTimeOffset(new DateTime(2026, 1, 12, 8, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
+                            Description = "Nightly full backups with 30-day retention.",
+                            IsDeleted = false,
+                            ModifiedDate = new DateTimeOffset(new DateTime(2026, 1, 14, 9, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
+                            Priority = "High",
+                            RowVersion = new byte[0],
+                            Status = "Done",
+                            Title = "Set up database backups"
+                        },
+                        new
+                        {
+                            Id = 12,
+                            AssignedTo = "Eve",
+                            CreatedDate = new DateTimeOffset(new DateTime(2026, 1, 13, 6, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
+                            Description = "Recover from the corrupted index incident.",
+                            IsDeleted = false,
+                            ModifiedDate = new DateTimeOffset(new DateTime(2026, 1, 13, 18, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
+                            Priority = "Critical",
+                            RowVersion = new byte[0],
+                            Status = "Done",
+                            Title = "Restore production database"
+                        },
+                        new
+                        {
+                            Id = 13,
+                            AssignedTo = "Chen",
+                            CreatedDate = new DateTimeOffset(new DateTime(2026, 1, 14, 9, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
+                            Description = "Created by mistake.",
+                            IsDeleted = true,
+                            ModifiedDate = new DateTimeOffset(new DateTime(2026, 1, 14, 10, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
+                            Priority = "Medium",
+                            RowVersion = new byte[0],
+                            Status = "Todo",
+                            Title = "Duplicate of \"Update team wiki\""
+                        },
+                        new
+                        {
+                            Id = 14,
+                            AssignedTo = "Eve",
+                            CreatedDate = new DateTimeOffset(new DateTime(2026, 1, 15, 11, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
+                            Description = "Cancelled after the budget review.",
+                            IsDeleted = true,
+                            ModifiedDate = new DateTimeOffset(new DateTime(2026, 1, 16, 9, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
+                            Priority = "High",
+                            RowVersion = new byte[0],
+                            Status = "InProgress",
+                            Title = "Evaluate vendor X"
+                        },
+                        new
+                        {
+                            Id = 15,
+                            CreatedDate = new DateTimeOffset(new DateTime(2026, 1, 16, 12, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
+                            IsDeleted = true,
+                            ModifiedDate = new DateTimeOffset(new DateTime(2026, 1, 16, 12, 0, 0, 0, DateTimeKind.Unspecified), new TimeSpan(0, 0, 0, 0, 0)),
+                            Priority = "Low",
+                            RowVersion = new byte[0],
+                            Status = "Done",
+                            Title = "Old test task"
+                        });
                 });
 #pragma warning restore 612, 618
         }
